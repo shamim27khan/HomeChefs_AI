@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Details - HomeChefs</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #e23744;
+            --secondary-color: #2d2d2d;
+            --accent-color: #ff6b6b;
+            --text-light: #6c757d;
+            --border-light: #e9ecef;
+            --bg-light: #f8f9fa;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--secondary-color);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: white;
+            box-shadow: var(--shadow-sm);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color) !important;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-brand i {
+            margin-right: 8px;
+            font-size: 1.8rem;
+        }
+
+        .nav-link {
+            color: var(--secondary-color) !important;
+            font-weight: 500;
+            margin: 0 8px;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        /* Chef Header */
+        .chef-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+        }
+
+        .chef-profile {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .chef-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            object-fit: cover;
+        }
+
+        .chef-info {
+            flex: 1;
+        }
+
+        .chef-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .chef-specialty {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .chef-stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Content Sections */
+        .content-section {
+            padding: 60px 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+            color: var(--secondary-color);
+        }
+
+        /* Food Menu */
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .food-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s;
+            border: 1px solid var(--border-light);
+        }
+
+        .food-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .food-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            position: relative;
+        }
+
+        .food-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .food-info {
+            padding: 20px;
+        }
+
+        .food-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .food-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .food-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .prep-time {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .rating {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .food-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .food-price {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        .add-to-cart {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-to-cart:hover {
+            background: var(--accent-color);
+        }
+
+        /* Reviews Section */
+        .reviews-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            margin-bottom: 20px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .reviewer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reviewer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+        }
+
+        .review-rating {
+            color: #ffc107;
+        }
+
+        .review-text {
+            color: var(--secondary-color);
+            line-height: 1.6;
+        }
+
+        .review-date {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-light);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chef-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .chef-stats {
+                justify-content: center;
+            }
+
+            .food-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-utensils"></i>
+                HomeChefs
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index_zomato_style.html#chefs">Chefs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index_zomato_style.html#food">Food</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showLoginModal()">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="#">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                0
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Chef Header -->
+    <div class="chef-header" id="chefHeader">
+        <div class="container">
+            <div class="chef-profile">
+                <img src="https://via.placeholder.com/120x120/667eea/ffffff?text=Chef" alt="Chef" class="chef-avatar" id="chefAvatar">
+                <div class="chef-info">
+                    <div class="chef-name" id="chefName">Loading...</div>
+                    <div class="chef-specialty" id="chefSpecialty">Loading...</div>
+                    <div class="chef-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="chefExperience">0</span>
+                            <span class="stat-label">Years Experience</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="chefRating">0</span>
+                            <span class="stat-label">Rating</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="chefDishes">0</span>
+                            <span class="stat-label">Dishes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chef Bio Section -->
+    <div class="content-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h2 class="section-title">About</h2>
+                    <p id="chefBio" class="lead">Loading chef information...</p>
+                </div>
+                <div class="col-lg-4">
+                    <h2 class="section-title">Info</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <p><strong>Delivery Radius:</strong> <span id="deliveryRadius">Loading...</span> km</p>
+                            <p><strong>Kitchen Address:</strong> <span id="kitchenAddress">Loading...</span></p>
+                            <p><strong>Specialties:</strong> <span id="cuisineSpecialties">Loading...</span></p>
+                            <button class="btn btn-primary w-100 mt-3" onclick="contactChef()">
+                                <i class="fas fa-message me-2"></i>Contact Chef
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Section -->
+    <div class="content-section" style="background: var(--bg-light);">
+        <div class="container">
+            <h2 class="section-title">Menu</h2>
+            <div class="food-grid" id="foodMenu">
+                <!-- Food items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="content-section">
+        <div class="container">
+            <h2 class="section-title">Customer Reviews</h2>
+            <div class="reviews-container" id="reviewsContainer">
+                <!-- Reviews will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // API Base URL
+        const API_BASE = 'http://127.0.0.1:8000/api';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const chefId = urlParams.get('id');
+            
+            if (chefId) {
+                loadChefDetails(chefId);
+                loadChefMenu(chefId);
+                loadChefReviews(chefId);
+            } else {
+                showError('Chef ID not provided');
+            }
+        });
+
+        // Load chef details
+        async function loadChefDetails(chefId) {
+            try {
+                const response = await fetch(`${API_BASE}/chefs/public/${chefId}/`);
+                const chef = await response.json();
+                displayChefDetails(chef);
+            } catch (error) {
+                console.error('Error loading chef details:', error);
+                showError('Failed to load chef details.');
+            }
+        }
+
+        // Display chef details
+        function displayChefDetails(chef) {
+            document.getElementById('chefName').textContent = `${chef.first_name} ${chef.last_name}`;
+            document.getElementById('chefSpecialty').textContent = chef.cuisine_specialties;
+            document.getElementById('chefExperience').textContent = chef.experience_years || 5;
+            document.getElementById('chefRating').textContent = chef.rating ? chef.rating.toFixed(1) : '4.5';
+            document.getElementById('chefDishes').textContent = chef.food_items ? chef.food_items.length : 0;
+            document.getElementById('chefBio').textContent = chef.bio || 'Passionate home chef dedicated to bringing you delicious, homemade meals with love and care.';
+            document.getElementById('deliveryRadius').textContent = chef.delivery_radius || 5;
+            document.getElementById('kitchenAddress').textContent = chef.kitchen_address || 'Mumbai, India';
+            document.getElementById('cuisineSpecialties').textContent = chef.cuisine_specialties;
+            
+            if (chef.profile_picture) {
+                document.getElementById('chefAvatar').src = chef.profile_picture;
+            }
+        }
+
+        // Load chef menu
+        async function loadChefMenu(chefId) {
+            try {
+                const response = await fetch(`${API_BASE}/customers/search/food/?chef=${chefId}`);
+                const foodItems = await response.json();
+                displayFoodMenu(foodItems);
+            } catch (error) {
+                console.error('Error loading chef menu:', error);
+                document.getElementById('foodMenu').innerHTML = '<p>Failed to load menu.</p>';
+            }
+        }
+
+        // Display food menu
+        function displayFoodMenu(foodItems) {
+            const container = document.getElementById('foodMenu');
+            
+            if (!foodItems || foodItems.length === 0) {
+                container.innerHTML = '<p>No menu items available at the moment.</p>';
+                return;
+            }
+
+            container.innerHTML = foodItems.map(food => `
+                <div class="food-card">
+                    <div class="position-relative">
+                        <img src="https://via.placeholder.com/300x200/667eea/ffffff?text=${food.name}" 
+                             alt="${food.name}" class="food-image">
+                        <span class="food-badge">${food.is_vegetarian ? '🌱 Veg' : '🍖 Non-Veg'}</span>
+                    </div>
+                    <div class="food-info">
+                        <div class="food-name">${food.name}</div>
+                        <div class="food-description">${food.description}</div>
+                        <div class="food-meta">
+                            <div class="prep-time">
+                                <i class="fas fa-clock me-1"></i>${food.preparation_time || 30} min
+                            </div>
+                            <div class="rating">
+                                <i class="fas fa-star"></i> ${food.rating || '4.5'}
+                            </div>
+                        </div>
+                        <div class="food-footer">
+                            <div class="food-price">₹${food.price}</div>
+                            <button class="add-to-cart" onclick="addToCart(${food.id})">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load chef reviews
+        async function loadChefReviews(chefId) {
+            try {
+                const response = await fetch(`${API_BASE}/chefs/reviews/`);
+                const reviews = await response.json();
+                displayReviews(reviews.filter(review => review.chef === parseInt(chefId)));
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                document.getElementById('reviewsContainer').innerHTML = '<p>Failed to load reviews.</p>';
+            }
+        }
+
+        // Display reviews
+        function displayReviews(reviews) {
+            const container = document.getElementById('reviewsContainer');
+            
+            if (!reviews || reviews.length === 0) {
+                container.innerHTML = '<p>No reviews yet.</p>';
+                return;
+            }
+
+            container.innerHTML = reviews.map(review => `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">${review.customer ? review.customer.first_name[0] : 'A'}</div>
+                            <div class="reviewer-name">${review.customer ? review.customer.first_name : 'Anonymous'}</div>
+                        </div>
+                        <div class="review-rating">
+                            ${generateStars(review.rating)}
+                        </div>
+                    </div>
+                    <div class="review-text">${review.comment}</div>
+                    <div class="review-date">${formatDate(review.created_at)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Generate star rating
+        function generateStars(rating) {
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 !== 0;
+            let stars = '';
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            if (hasHalfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            const emptyStars = 5 - Math.ceil(rating);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="far fa-star"></i>';
+            }
+            
+            return stars;
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Add to cart
+        function addToCart(foodId) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            const existingItem = cart.find(item => item.food_id === foodId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ food_id: foodId, quantity: 1 });
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            showSuccess('Item added to cart!');
+        }
+
+        // Update cart count
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            const cartBadge = document.querySelector('.badge');
+            if (cartBadge) {
+                cartBadge.textContent = count;
+            }
+        }
+
+        // Contact chef
+        function contactChef() {
+            alert('Contact feature coming soon! You can reach out to the chef through our customer support.');
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
+            successDiv.style.zIndex = '9999';
+            successDiv.textContent = message;
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        // Show error
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize cart count
+        updateCartCount();
+    </script>
+</body>
+</html>
