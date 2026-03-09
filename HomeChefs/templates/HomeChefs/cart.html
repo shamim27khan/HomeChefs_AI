@@ -1,0 +1,396 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Shopping Cart - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-shopping-cart me-2"></i>Your Cart</h4>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearCart()" id="clearCartBtn" style="display: none;">
+                        <i class="fas fa-trash me-1"></i>Clear Cart
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="cartItems">
+                        <div class="text-center py-5">
+                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                            <h4>Your cart is empty</h4>
+                            <p class="text-muted">Add some delicious homemade meals to get started!</p>
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Browse Meals
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee:</span>
+                        <span id="deliveryFee">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Platform Fee:</span>
+                        <span id="platformFee">₹0</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong id="total">₹0</strong>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" onclick="proceedToCheckout()" id="checkoutBtn" disabled>
+                        <i class="fas fa-lock me-2"></i>Proceed to Checkout
+                    </button>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Secure checkout powered by HomeChefHub
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Delivery Address</h6>
+                </div>
+                <div class="card-body">
+                    <form id="addressForm">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" placeholder="Full Address" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" placeholder="Landmark (Optional)">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="text" class="form-control" placeholder="City" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <input type="text" class="form-control" placeholder="Pincode" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cart = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Cart page loaded, checking auth...');
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('user');
+    
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!userStr);
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log('User logged in:', user.username);
+            updateAuthUI(user);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    } else {
+        console.log('No auth data found, user not logged in');
+    }
+    
+    loadCartFromStorage();
+    updateCartDisplay();
+});
+
+function loadCartFromStorage() {
+    const cartData = localStorage.getItem('homechef_cart');
+    if (cartData) {
+        cart = JSON.parse(cartData);
+    }
+}
+
+function saveCartToStorage() {
+    // Recalculate total prices before saving
+    cart.forEach(item => {
+        item.total_price = item.price_per_portion * item.quantity;
+    });
+    localStorage.setItem('homechef_cart', JSON.stringify(cart));
+    
+    // Update cart counter in navigation
+    if (typeof updateCartCounter === 'function') {
+        updateCartCounter();
+    }
+}
+
+function addToCart(meal) {
+    const existingItem = cart.find(item => 
+        item.id === meal.id && 
+        item.delivery_type === meal.delivery_type &&
+        item.special_instructions === meal.special_instructions
+    );
+    
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({
+            ...meal,
+            quantity: 1
+        });
+    }
+    
+    saveCartToStorage();
+    updateCartDisplay();
+    showNotification('Item added to cart!');
+}
+
+function removeFromCart(mealId) {
+    console.log('Removing item with ID:', mealId);
+    console.log('Cart before removal:', cart);
+    
+    cart = cart.filter(item => item.id !== mealId);
+    saveCartToStorage();
+    updateCartDisplay();
+    
+    console.log('Cart after removal:', cart);
+}
+
+function clearCart() {
+    if (confirm('Are you sure you want to clear your entire cart?')) {
+        cart = [];
+        saveCartToStorage();
+        updateCartDisplay();
+        showNotification('Cart cleared successfully');
+    }
+}
+
+function updateQuantity(mealId, change) {
+    const item = cart.find(item => item.id === mealId);
+    if (item) {
+        const newQuantity = item.quantity + change;
+        
+        // Check if we're trying to increase quantity
+        if (change > 0) {
+            // Check if we have available portions data
+            if (item.available_portions !== undefined) {
+                if (newQuantity > item.available_portions) {
+                    const message = `Only ${item.available_portions} portions available for ${item.main_dish}. You currently have ${item.quantity} in cart.`;
+                    if (confirm(message + '\n\nWould you like to remove some items or continue shopping for other meals?')) {
+                        // User wants to modify cart - stay on cart page
+                        return;
+                    } else {
+                        // User wants to continue shopping
+                        window.location.href = '/';
+                        return;
+                    }
+                    return;
+                }
+            } else {
+                // If we don't have availability data, fetch it from API
+                checkAvailabilityAndUpdate(item, change);
+                return;
+            }
+        }
+        
+        // Allow quantity decrease or valid increase
+        if (newQuantity <= 0) {
+            removeFromCart(mealId);
+        } else {
+            item.quantity = newQuantity;
+            item.total_price = item.price_per_portion * item.quantity;
+            saveCartToStorage();
+            updateCartDisplay();
+        }
+    }
+}
+
+// Check availability from API and update if possible
+async function checkAvailabilityAndUpdate(item, change) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/chefs/today-meals/`, {
+            headers: token ? { 'Authorization': `Token ${token}` } : {}
+        });
+        
+        if (response.ok) {
+            const meals = await response.json();
+            const mealData = meals.find(meal => meal.id === item.meal_id);
+            
+            if (mealData) {
+                // Update item with availability data
+                item.available_portions = mealData.available_portions;
+                item.is_orderable = mealData.is_orderable;
+                
+                // Check if we can increase quantity
+                const newQuantity = item.quantity + change;
+                if (newQuantity > mealData.available_portions) {
+                    const message = `Only ${mealData.available_portions} portions available for ${item.main_dish}. You currently have ${item.quantity} in cart.`;
+                    if (confirm(message + '\n\nWould you like to remove some items or continue shopping?')) {
+                        // User wants to modify cart - stay on cart page
+                        return;
+                    } else {
+                        // User wants to continue shopping
+                        window.location.href = '/';
+                        return;
+                    }
+                    return;
+                }
+                
+                // Allow the update
+                item.quantity = newQuantity;
+                item.total_price = item.price_per_portion * item.quantity;
+                saveCartToStorage();
+                updateCartDisplay();
+                return;
+            }
+        }
+        
+        // If API call fails, block the increment and show error
+        showNotification('Unable to verify availability. Please try again later.', 'error');
+        return;
+        
+    } catch (error) {
+        console.error('Error checking availability:', error);
+        // If API call fails, block the increment and show error
+        showNotification('Unable to verify availability. Please try again later.', 'error');
+        return;
+    }
+}
+
+function updateCartDisplay() {
+    const container = document.getElementById('cartItems');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const clearCartBtn = document.getElementById('clearCartBtn');
+    
+    console.log('Updating cart display. Cart items:', cart.length);
+    console.log('Cart contents:', cart);
+    
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h4>Your cart is empty</h4>
+                <p class="text-muted">Add some delicious homemade meals to get started!</p>
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Browse Meals
+                </a>
+            </div>
+        `;
+        checkoutBtn.disabled = true;
+        clearCartBtn.style.display = 'none';
+    } else {
+        clearCartBtn.style.display = 'block';
+        container.innerHTML = cart.map(item => {
+            // Check if item is at maximum capacity
+            const isAtMax = item.available_portions !== undefined && item.quantity >= item.available_portions;
+            const isOrderable = item.is_orderable !== false; // Default to true if not set
+            
+            return `
+            <div class="d-flex align-items-center mb-3 p-3 border rounded ${!isOrderable ? 'bg-light' : ''}">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">${item.main_dish}</h6>
+                    <small class="text-muted">${item.chef_username || 'Chef'} (ID: ${item.id})</small>
+                    ${item.available_portions !== undefined ? 
+                        `<div class="mt-1">
+                            <small class="${isAtMax ? 'text-danger' : 'text-success'}">
+                                ${isAtMax ? '⚠️ At maximum capacity' : `✓ ${item.available_portions - item.quantity} portions available`}
+                            </small>
+                        </div>` : ''
+                    }
+                    ${!isOrderable ? 
+                        `<div class="mt-1">
+                            <small class="text-warning">⚠️ Ordering closed (past cutoff time)</small>
+                        </div>` : ''
+                    }
+                    <div class="mt-2">
+                        <span class="price-tag">₹${item.price_per_portion}</span>
+                        <span class="text-muted ms-2">× ${item.quantity} = ₹${item.total_price}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <span class="mx-3">${item.quantity}</span>
+                    <button class="btn btn-sm btn-outline-secondary ${isAtMax || !isOrderable ? 'disabled' : ''}" 
+                            onclick="updateQuantity(${item.id}, 1)"
+                            ${isAtMax || !isOrderable ? 'disabled' : ''}>
+                        +
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-3" onclick="removeFromCart(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        }).join('');
+        checkoutBtn.disabled = false;
+    }
+    
+    updateOrderSummary();
+}
+
+function updateOrderSummary() {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price_per_portion * item.quantity), 0);
+    const deliveryFee = subtotal > 0 ? 30 : 0;
+    const platformFee = subtotal > 0 ? 10 : 0;
+    const total = subtotal + deliveryFee + platformFee;
+    
+    document.getElementById('subtotal').textContent = `₹${subtotal}`;
+    document.getElementById('deliveryFee').textContent = `₹${deliveryFee}`;
+    document.getElementById('platformFee').textContent = `₹${platformFee}`;
+    document.getElementById('total').textContent = `₹${total}`;
+}
+
+function proceedToCheckout() {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        showLoginModal();
+        return;
+    }
+    
+    // Check if cart is empty
+    if (cart.length === 0) {
+        alert('Your cart is empty');
+        return;
+    }
+    
+    // Redirect to checkout
+    window.location.href = '/checkout/';
+}
+
+function showNotification(message) {
+    // Simple notification (could be enhanced with a toast library)
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>${message}
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

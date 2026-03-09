@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-_5%b5wtf99^v=2%ettj12)_)*ca8@x+d!pj228*j0ek1dtq@fc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
 
 
 # Application definition
@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'HomeChefs.middleware.CSRFExemptMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -64,7 +65,7 @@ ROOT_URLCONF = 'HomeChefs.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'HomeChefs' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

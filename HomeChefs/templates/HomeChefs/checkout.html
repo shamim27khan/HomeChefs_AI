@@ -1,0 +1,867 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Checkout - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Checkout Progress -->
+        <div class="col-12 mb-4">
+            <div class="d-flex justify-content-center">
+                <div class="d-flex align-items-center">
+                    <div class="step completed">
+                        <div class="step-circle">1</div>
+                        <span class="step-label">Cart</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step active">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">Checkout</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">Payment</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step">
+                        <div class="step-circle">4</div>
+                        <span class="step-label">Confirmation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shopping-cart me-2"></i>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div id="checkoutItems">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Address -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-map-marker-alt me-2"></i>Delivery Address</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Saved Addresses -->
+                    <div id="savedAddresses" class="mb-4">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading addresses...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add New Address Button -->
+                    <div class="text-center mb-3">
+                        <button type="button" class="btn btn-outline-primary" onclick="showAddAddressForm()">
+                            <i class="fas fa-plus me-2"></i>Add New Address
+                        </button>
+                    </div>
+                    
+                    <!-- New Address Form (Hidden by default) -->
+                    <div id="newAddressForm" style="display: none;">
+                        <hr>
+                        <h6 class="mb-3">Add New Address</h6>
+                        <form id="addAddressForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="newFullName" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="newFullName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPhone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="newPhone" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newAddress" class="form-label">Address</label>
+                                <textarea class="form-control" id="newAddress" rows="2" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="newCity" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="newCity" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="newState" class="form-label">State</label>
+                                    <input type="text" class="form-control" id="newState" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="newPincode" class="form-label">Pincode</label>
+                                    <input type="text" class="form-control" id="newPincode" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="newLandmark" class="form-label">Landmark</label>
+                                    <input type="text" class="form-control" id="newLandmark">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="addressIdentifier" class="form-label">Address Identifier (Optional)</label>
+                                    <input type="text" class="form-control" id="addressIdentifier" placeholder="e.g., Near Central Park, Behind Mall">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="addressType" class="form-label">Address Type</label>
+                                    <select class="form-select" id="addressType">
+                                        <option value="home">Home</option>
+                                        <option value="work">Work</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="setDefault" class="form-label">&nbsp;</label>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="setDefault">
+                                        <label class="form-check-label" for="setDefault">
+                                            Set as default address
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary" onclick="saveNewAddress()">
+                                    <i class="fas fa-save me-2"></i>Save Address
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="hideAddAddressForm()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-credit-card me-2"></i>Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-methods">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="cod" checked>
+                            <label class="form-check-label" for="cod">
+                                <i class="fas fa-money-bill-wave me-2"></i>Cash on Delivery
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="upi" value="upi">
+                            <label class="form-check-label" for="upi">
+                                <i class="fas fa-mobile-alt me-2"></i>UPI / PhonePe / GPay
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="card" value="card">
+                            <label class="form-check-label" for="card">
+                                <i class="fas fa-credit-card me-2"></i>Debit / Credit Card
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- UPI Payment Details (Hidden by default) -->
+                    <div id="upiDetails" style="display: none;" class="mt-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You will be redirected to UPI app for payment
+                        </div>
+                    </div>
+                    
+                    <!-- Card Payment Details (Hidden by default) -->
+                    <div id="cardDetails" style="display: none;" class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cardNumber" class="form-label">Card Number</label>
+                                <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cardName" class="form-label">Name on Card</label>
+                                <input type="text" class="form-control" id="cardName">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="expiry" class="form-label">Expiry Date</label>
+                                <input type="text" class="form-control" id="expiry" placeholder="MM/YY">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cvv" class="form-label">CVV</label>
+                                <input type="text" class="form-control" id="cvv" placeholder="123">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Order Total</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee:</span>
+                        <span id="deliveryFee">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Platform Fee:</span>
+                        <span id="platformFee">₹0</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total:</strong>
+                        <strong id="total">₹0</strong>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" onclick="placeOrder()" id="placeOrderBtn">
+                        <i class="fas fa-check me-2"></i>Place Order
+                    </button>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>
+                            Secure payment powered by HomeChefHub
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Timeline -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Delivery Timeline</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Order Confirmed</h6>
+                                <small class="text-muted">Immediately</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Food Prepared</h6>
+                                <small class="text-muted">30-45 minutes</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>On the Way</h6>
+                                <small class="text-muted">45-60 minutes</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Delivered</h6>
+                                <small class="text-muted">60-90 minutes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cart = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Checkout page loaded');
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('Please login to proceed with checkout');
+        window.location.href = '/cart/';
+        return;
+    }
+    
+    loadCartFromStorage();
+    displayCheckoutItems();
+    updateOrderSummary();
+    setupPaymentMethodListeners();
+    loadUserAddresses();
+});
+
+// Address management functions
+let userAddresses = [];
+let selectedAddress = null;
+
+async function loadUserAddresses() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/customers/addresses/', {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load addresses');
+        }
+        
+        userAddresses = await response.json();
+        console.log('User addresses:', userAddresses);
+        
+        displaySavedAddresses();
+        
+    } catch (error) {
+        console.error('Error loading addresses:', error);
+        // Still show registration address as fallback
+        displayRegistrationAddress();
+    }
+}
+
+function displaySavedAddresses() {
+    const container = document.getElementById('savedAddresses');
+    
+    if (userAddresses.length === 0) {
+        displayRegistrationAddress();
+        return;
+    }
+    
+    let addressesHtml = '<div class="row">';
+    
+    userAddresses.forEach((address, index) => {
+        const isDefault = address.is_default;
+        const addressId = `address_${address.id}`;
+        
+        addressesHtml += `
+            <div class="col-md-6 mb-3">
+                <div class="card address-card ${isDefault ? 'border-primary' : ''}">
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="selectedAddress" 
+                                   id="${addressId}" value="${address.id}" 
+                                   ${isDefault ? 'checked' : ''} onchange="selectAddress(${address.id})">
+                            <label class="form-check-label w-100" for="${addressId}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>${address.address_type.charAt(0).toUpperCase() + address.address_type.slice(1)}</strong>
+                                        ${address.address_identifier ? `<span class="text-muted ms-2">- ${address.address_identifier}</span>` : ''}
+                                        ${isDefault ? '<span class="badge bg-primary ms-2">Default</span>' : ''}
+                                        <div class="small text-muted mt-1">
+                                            ${address.address_line}<br>
+                                            ${address.landmark ? `${address.landmark}, ` : ''}
+                                            ${address.city}, ${address.state} - ${address.postal_code}
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${address.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    addressesHtml += '</div>';
+    container.innerHTML = addressesHtml;
+    
+    // Set default selected address
+    const defaultAddress = userAddresses.find(addr => addr.is_default);
+    if (defaultAddress) {
+        selectedAddress = defaultAddress;
+    }
+}
+
+function displayRegistrationAddress() {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    const container = document.getElementById('savedAddresses');
+    
+    if (user && user.address) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i>Registration Address</h6>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="selectedAddress" 
+                           id="registrationAddress" value="registration" checked onchange="selectRegistrationAddress()">
+                    <label class="form-check-label w-100" for="registrationAddress">
+                        <div class="small">${user.address}</div>
+                    </label>
+                </div>
+            </div>
+        `;
+        selectedAddress = { type: 'registration', address: user.address };
+    } else {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No saved addresses found. Please add a delivery address.
+            </div>
+        `;
+    }
+}
+
+function selectAddress(addressId) {
+    selectedAddress = userAddresses.find(addr => addr.id === addressId);
+    console.log('Selected address:', selectedAddress);
+}
+
+function selectRegistrationAddress() {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (user && user.address) {
+        selectedAddress = { type: 'registration', address: user.address };
+    }
+}
+
+function showAddAddressForm() {
+    document.getElementById('newAddressForm').style.display = 'block';
+    // Pre-fill with user info
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (user) {
+        document.getElementById('newFullName').value = user.first_name + ' ' + user.last_name;
+        document.getElementById('newPhone').value = user.phone_number || '';
+    }
+}
+
+function hideAddAddressForm() {
+    document.getElementById('newAddressForm').style.display = 'none';
+    document.getElementById('addAddressForm').reset();
+    // Clear the identifier field manually since it's not in the form
+    document.getElementById('addressIdentifier').value = '';
+}
+
+async function saveNewAddress() {
+    try {
+        const token = localStorage.getItem('authToken');
+        
+        const addressData = {
+            address_type: document.getElementById('addressType').value,
+            address_line: document.getElementById('newAddress').value,
+            landmark: document.getElementById('newLandmark').value,
+            address_identifier: document.getElementById('addressIdentifier').value,
+            city: document.getElementById('newCity').value,
+            state: document.getElementById('newState').value,
+            postal_code: document.getElementById('newPincode').value,
+            is_default: document.getElementById('setDefault').checked
+        };
+        
+        const response = await fetch('/api/customers/addresses/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            },
+            body: JSON.stringify(addressData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to save address');
+        }
+        
+        const newAddress = await response.json();
+        userAddresses.push(newAddress);
+        
+        hideAddAddressForm();
+        displaySavedAddresses();
+        
+        alert('Address saved successfully!');
+        
+    } catch (error) {
+        console.error('Error saving address:', error);
+        alert('Failed to save address: ' + error.message);
+    }
+}
+
+async function deleteAddress(addressId) {
+    if (!confirm('Are you sure you want to delete this address?')) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/customers/addresses/', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            },
+            body: JSON.stringify({ address_id: addressId })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to delete address');
+        }
+        
+        userAddresses = userAddresses.filter(addr => addr.id !== addressId);
+        displaySavedAddresses();
+        
+        alert('Address deleted successfully!');
+        
+    } catch (error) {
+        console.error('Error deleting address:', error);
+        alert('Failed to delete address: ' + error.message);
+    }
+}
+
+// Helper function to get cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function loadCartFromStorage() {
+    const cartData = localStorage.getItem('homechef_cart');
+    if (cartData) {
+        cart = JSON.parse(cartData);
+    }
+}
+
+function displayCheckoutItems() {
+    const container = document.getElementById('checkoutItems');
+    
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Your cart is empty. <a href="/">Browse meals</a>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = cart.map(item => `
+        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+            <div class="flex-grow-1">
+                <h6 class="mb-1">${item.main_dish}</h6>
+                <small class="text-muted">
+                    ${item.chef_username || 'Chef'} • 
+                    ${item.delivery_type || 'pickup'} • 
+                    Qty: ${item.quantity}
+                </small>
+                <div class="mt-2">
+                    <span class="price-tag">₹${item.price_per_portion} × ${item.quantity}</span>
+                    <span class="ms-2 fw-bold">₹${item.price_per_portion * item.quantity}</span>
+                </div>
+                ${item.special_instructions ? `<small class="text-muted d-block mt-1">Note: ${item.special_instructions}</small>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateOrderSummary() {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price_per_portion * item.quantity), 0);
+    const deliveryFee = subtotal > 0 ? 30 : 0;
+    const platformFee = subtotal > 0 ? 10 : 0;
+    const total = subtotal + deliveryFee + platformFee;
+    
+    document.getElementById('subtotal').textContent = `₹${subtotal}`;
+    document.getElementById('deliveryFee').textContent = `₹${deliveryFee}`;
+    document.getElementById('platformFee').textContent = `₹${platformFee}`;
+    document.getElementById('total').textContent = `₹${total}`;
+}
+
+function setupPaymentMethodListeners() {
+    const paymentMethods = document.querySelectorAll('input[name="paymentMethod"]');
+    paymentMethods.forEach(method => {
+        method.addEventListener('change', function() {
+            // Hide all payment details
+            document.getElementById('upiDetails').style.display = 'none';
+            document.getElementById('cardDetails').style.display = 'none';
+            
+            // Show selected payment details
+            if (this.value === 'upi') {
+                document.getElementById('upiDetails').style.display = 'block';
+            } else if (this.value === 'card') {
+                document.getElementById('cardDetails').style.display = 'block';
+            }
+        });
+    });
+}
+
+async function placeOrder() {
+    if (cart.length === 0) {
+        alert('Your cart is empty');
+        return;
+    }
+    
+    // Check if address is selected
+    if (!selectedAddress) {
+        alert('Please select a delivery address');
+        return;
+    }
+    
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    const originalText = placeOrderBtn.innerHTML;
+    
+    try {
+        // Show loading state
+        placeOrderBtn.disabled = true;
+        placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Placing Order...';
+        
+        const token = localStorage.getItem('authToken');
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+        
+        console.log('Authentication token exists:', !!token);
+        console.log('Token length:', token ? token.length : 0);
+        console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'None');
+        
+        if (!token) {
+            throw new Error('No authentication token found. Please login again.');
+        }
+        
+        console.log('Placing order with payment method:', paymentMethod);
+        console.log('Cart items:', cart);
+        console.log('Selected address:', selectedAddress);
+        
+        // Prepare delivery address string
+        let deliveryAddress = '';
+        if (selectedAddress.type === 'registration') {
+            deliveryAddress = selectedAddress.address;
+        } else {
+            deliveryAddress = `${selectedAddress.address_line}, ${selectedAddress.landmark ? selectedAddress.landmark + ', ' : ''}${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.postal_code}`;
+        }
+        
+        // Place individual orders for each cart item
+        const orders = [];
+        const errors = [];
+        
+        for (const item of cart) {
+            try {
+                // Prepare order data for single item
+                const orderData = {
+                    daily_meal: item.meal_id,
+                    portions: item.quantity,
+                    delivery_type: item.delivery_type || 'pickup',
+                    delivery_address: deliveryAddress,
+                    special_instructions: item.special_instructions || ''
+                };
+                
+                console.log('Placing order for item:', item.main_dish, 'with data:', orderData);
+                
+                // Make API call to place order
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${token}`
+                };
+                
+                // Add CSRF token if available
+                const csrfToken = getCookie('csrftoken');
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
+                
+                const response = await fetch('/api/mvp/orders/create/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(orderData)
+                });
+                
+                console.log('Response status for', item.main_dish, ':', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Raw error response for', item.main_dish, ':', errorText);
+                    
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = {error: errorText};
+                    }
+                    
+                    console.error('Parsed error response for', item.main_dish, ':', errorData);
+                    errors.push(`${item.main_dish}: ${errorData.error || errorData.message || errorData.detail || 'Unknown error'}`);
+                    continue;
+                }
+                
+                const order = await response.json();
+                console.log('Order created successfully for', item.main_dish, ':', order);
+                orders.push(order);
+                
+            } catch (error) {
+                console.error('Error placing order for', item.main_dish, ':', error);
+                errors.push(`${item.main_dish}: ${error.message}`);
+            }
+        }
+        
+        // Check if any orders were placed
+        if (orders.length === 0) {
+            throw new Error('No orders could be placed. Errors: ' + errors.join('; '));
+        }
+        
+        // Clear cart only if at least one order was successful
+        localStorage.removeItem('homechef_cart');
+        
+        // Update cart counter in navigation
+        if (typeof updateCartCounter === 'function') {
+            updateCartCounter();
+        }
+        
+        // Show results
+        if (errors.length > 0) {
+            alert(`Some orders failed: ${errors.join('; ')}. ${orders.length} order(s) placed successfully.`);
+        } else {
+            alert(`All ${orders.length} order(s) placed successfully!`);
+        }
+        
+        // Redirect to first order confirmation
+        window.location.href = `/order-confirmation/${orders[0].id}/`;
+        
+    } catch (error) {
+        console.error('Error placing order:', error);
+        alert('Failed to place order: ' + error.message);
+        
+        // Reset button
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = originalText;
+    }
+}
+</script>
+
+<style>
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.step.completed .step-circle {
+    background: #28a745;
+    color: white;
+}
+
+.step.active .step-circle {
+    background: #007bff;
+    color: white;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.step.active .step-label {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.step-line {
+    width: 100px;
+    height: 2px;
+    background: #e9ecef;
+    margin: 0 10px;
+    margin-bottom: 32px;
+}
+
+.step.completed + .step-line {
+    background: #28a745;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.timeline-content h6 {
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+
+.timeline-content small {
+    font-size: 12px;
+}
+
+.address-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.address-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.address-card.border-primary {
+    border-width: 2px;
+}
+</style>
+{% endblock %}

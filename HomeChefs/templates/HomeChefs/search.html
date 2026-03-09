@@ -1,0 +1,738 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Search Chefs & Meals - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Search Home Chefs</h2>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="area" class="form-control" 
+                                   placeholder="Search by area, pincode, or cuisine..." 
+                                   value="{{ request.GET.area }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="searchResults">
+                <!-- Search results will be loaded here -->
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>Search for home chefs in your area</h4>
+                    <p class="text-muted">Enter your location or cuisine preference to find homemade meals</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Location & Radius -->
+                    <h6>Location & Distance</h6>
+                    <div class="mb-3">
+                        <div class="mb-2">
+                            <input type="text" id="locationInput" class="form-control" 
+                                   placeholder="Enter your location..." 
+                                   value="{{ request.GET.area }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="radiusSlider" class="form-label">
+                                Distance: <span id="radiusValue">5</span> km
+                            </label>
+                            <input type="range" class="form-range" id="radiusSlider" 
+                                   min="1" max="10" value="5" step="1">
+                        </div>
+                    </div>
+                    
+                    <!-- Cuisine Type -->
+                    <h6>Cuisine Type</h6>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input cuisine-checkbox" type="checkbox" value="North Indian" id="northIndian">
+                            <label class="form-check-label" for="northIndian">North Indian</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input cuisine-checkbox" type="checkbox" value="South Indian" id="southIndian">
+                            <label class="form-check-label" for="southIndian">South Indian</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input cuisine-checkbox" type="checkbox" value="Chinese" id="chinese">
+                            <label class="form-check-label" for="chinese">Chinese</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input cuisine-checkbox" type="checkbox" value="Continental" id="continental">
+                            <label class="form-check-label" for="continental">Continental</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Meal Type -->
+                    <h6>Meal Type</h6>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input meal-checkbox" type="checkbox" value="breakfast" id="breakfast">
+                            <label class="form-check-label" for="breakfast">Breakfast</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input meal-checkbox" type="checkbox" value="lunch" id="lunch">
+                            <label class="form-check-label" for="lunch">Lunch</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input meal-checkbox" type="checkbox" value="dinner" id="dinner">
+                            <label class="form-check-label" for="dinner">Dinner</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input meal-checkbox" type="checkbox" value="snacks" id="snacks">
+                            <label class="form-check-label" for="snacks">Snacks</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Dietary Preference -->
+                    <h6>Dietary Preference</h6>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="vegetarian" id="vegetarian">
+                            <label class="form-check-label" for="vegetarian">Vegetarian</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="non-vegetarian" id="nonVegetarian">
+                            <label class="form-check-label" for="nonVegetarian">Non-Vegetarian</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Range -->
+                    <h6>Price Range</h6>
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="minPrice" 
+                                       placeholder="Min" min="0">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="maxPrice" 
+                                       placeholder="Max" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Apply Filters Button -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Define API_BASE globally for this page
+window.API_BASE = '/api/mvp';
+
+// Debug API_BASE on page load
+console.log('=== PAGE LOAD DEBUGGING ===');
+console.log('API_BASE variable:', API_BASE);
+console.log('Window location:', window.location.href);
+console.log('Template should be Django search.html');
+console.log('============================');
+
+// Load search results if parameters are provided
+function loadSearchResults() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const area = urlParams.get('area');
+    const cuisine = urlParams.get('cuisine');
+    const query = urlParams.get('q');
+    
+    console.log('=== SEARCH PAGE DEBUGGING ===');
+    console.log('Full URL:', window.location.href);
+    console.log('URL Parameters:', Object.fromEntries(urlParams.entries()));
+    console.log('Area:', area);
+    console.log('Cuisine:', cuisine);
+    console.log('Query:', query);
+    console.log('============================');
+    
+    // Auto-set filters based on URL parameters
+    if (area) {
+        document.getElementById('locationInput').value = area;
+        console.log('Set location filter:', area);
+    }
+    
+    if (cuisine) {
+        // Clear all cuisine checkboxes first
+        document.querySelectorAll('.cuisine-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Set the specific cuisine checkbox
+        const cuisineCheckboxes = document.querySelectorAll('.cuisine-checkbox');
+        cuisineCheckboxes.forEach(checkbox => {
+            if (checkbox.value.toLowerCase() === cuisine.toLowerCase()) {
+                checkbox.checked = true;
+                console.log('Set cuisine filter:', checkbox.value);
+            }
+        });
+    }
+    
+    // Get other filter parameters
+    const mealType = urlParams.get('meal_type');
+    const dietary = urlParams.get('dietary');
+    const minPrice = urlParams.get('min_price');
+    const maxPrice = urlParams.get('max_price');
+    const radius = urlParams.get('radius');
+    
+    // Set meal type filters
+    if (mealType) {
+        // Clear all meal checkboxes first
+        document.querySelectorAll('.meal-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        const mealTypes = mealType.split(',');
+        mealTypes.forEach(meal => {
+            const mealCheckbox = document.querySelector(`.meal-checkbox[value="${meal.trim()}"]`);
+            if (mealCheckbox) {
+                mealCheckbox.checked = true;
+                console.log('Set meal type filter:', meal.trim());
+            }
+        });
+    }
+    
+    // Set dietary filters
+    if (dietary) {
+        // Clear dietary checkboxes first
+        document.getElementById('vegetarian').checked = false;
+        document.getElementById('nonVegetarian').checked = false;
+        
+        const dietaryTypes = dietary.split(',');
+        dietaryTypes.forEach(diet => {
+            if (diet.trim().toLowerCase() === 'vegetarian') {
+                document.getElementById('vegetarian').checked = true;
+                console.log('Set dietary filter: vegetarian');
+            } else if (diet.trim().toLowerCase() === 'non-vegetarian') {
+                document.getElementById('nonVegetarian').checked = true;
+                console.log('Set dietary filter: non-vegetarian');
+            }
+        });
+    }
+    
+    // Set price range
+    if (minPrice) {
+        document.getElementById('minPrice').value = minPrice;
+        console.log('Set min price:', minPrice);
+    }
+    if (maxPrice) {
+        document.getElementById('maxPrice').value = maxPrice;
+        console.log('Set max price:', maxPrice);
+    }
+    
+    // Set radius
+    if (radius) {
+        document.getElementById('radiusSlider').value = radius;
+        document.getElementById('radiusValue').textContent = radius;
+        console.log('Set radius:', radius);
+    }
+    
+    if (area) {
+        console.log('Searching by area:', area);
+        searchChefs(area);
+    } else if (cuisine) {
+        console.log('Searching by cuisine:', cuisine);
+        searchByCuisine(cuisine);
+    } else if (query) {
+        console.log('Searching by query:', query);
+        searchByQuery(query);
+    } else {
+        console.log('No search parameters found, loading all chefs');
+        loadAllChefs();
+    }
+}
+
+// Call search results loading after base template authentication is complete
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure base template auth logic runs first
+    setTimeout(loadSearchResults, 50);
+});
+
+async function searchChefs(area) {
+    console.log('Searching food for area:', area);
+    
+    try {
+        // Get auth token
+        const token = localStorage.getItem('authToken');
+        
+        // Prepare headers with auth token if available
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+            console.log('Including auth token in request');
+        } else {
+            console.log('No auth token available, making public request');
+        }
+        
+        const response = await fetch(`${API_BASE}/chefs/public/?area=${encodeURIComponent(area)}`, {
+            headers: headers
+        });
+        
+        console.log('Search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const chefs = await response.json();
+        console.log('Found chefs:', chefs.length);
+        
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (chefs.length > 0) {
+            resultsContainer.innerHTML = `
+                <h4>Found ${chefs.length} chefs in "${area}"</h4>
+                <div class="row g-4">
+                    ${chefs.map(chef => createChefCard(chef)).join('')}
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>No chefs found</h4>
+                    <p class="text-muted">Try searching with different keywords or browse all chefs</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error searching chefs:', error);
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Search Error</h4>
+                <p class="text-muted">Unable to search for chefs. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Load all chefs for default view
+async function loadAllChefs() {
+    console.log('Loading all available chefs...');
+    
+    try {
+        // Get auth token
+        const token = localStorage.getItem('authToken');
+        
+        // Prepare headers with auth token if available
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+            console.log('Including auth token in request');
+        } else {
+            console.log('No auth token available, making public request');
+        }
+        
+        const response = await fetch(`${API_BASE}/chefs/public/`, {
+            headers: headers
+        });
+        
+        console.log('Load all chefs response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const chefs = await response.json();
+        console.log('Found chefs:', chefs.length);
+        
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (chefs.length > 0) {
+            resultsContainer.innerHTML = `
+                <h4>All Available Chefs (${chefs.length})</h4>
+                <div class="row g-4">
+                    ${chefs.map(chef => createChefCard(chef)).join('')}
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>No chefs found</h4>
+                    <p class="text-muted">No chefs are available at the moment. Please check back later.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading all chefs:', error);
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Loading Error</h4>
+                <p class="text-muted">Unable to load chefs. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+function createChefCard(chef) {
+    return `
+        <div class="col-md-6">
+            <div class="card chef-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://picsum.photos/seed/${chef.username}/60/60.jpg" 
+                             alt="${chef.username}" class="chef-avatar me-3">
+                        <div>
+                            <h6 class="mb-1">${chef.username}</h6>
+                            <small class="text-muted">${chef.area}</small>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-2">${chef.cuisine_specialties}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-star text-warning"></i>
+                            ${chef.average_rating || '0.0'} rating
+                        </small>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewChef(${chef.id})">
+                            View Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function viewChef(chefId) {
+    console.log('Viewing chef:', chefId);
+    window.location.href = `{% url 'chef_detail' %}?chef_id=${chefId}`;
+}
+
+// Search by cuisine type
+async function searchByCuisine(cuisine) {
+    console.log('=== SEARCH BY CUISINE DEBUGGING ===');
+    console.log('Cuisine parameter:', cuisine);
+    console.log('API_BASE:', API_BASE);
+    console.log('Current page URL:', window.location.href);
+    console.log('Current template should be Django search.html');
+    
+    try {
+        // Get auth token
+        const token = localStorage.getItem('authToken');
+        
+        // Prepare headers with auth token if available
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+            console.log('Including auth token in request');
+        } else {
+            console.log('No auth token available, making public request');
+        }
+        
+        console.log('Making API call to:', `${API_BASE}/chefs/public/?cuisine=${encodeURIComponent(cuisine)}`);
+        
+        const response = await fetch(`${API_BASE}/chefs/public/?cuisine=${encodeURIComponent(cuisine)}`, {
+            headers: headers
+        });
+        
+        console.log('Search response status:', response.status);
+        console.log('Search response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const chefs = await response.json();
+        console.log('Raw response data:', chefs);
+        console.log('Response data type:', typeof chefs);
+        console.log('Is array?', Array.isArray(chefs));
+        
+        if (chefs && Array.isArray(chefs)) {
+            console.log('Found chefs:', chefs.length);
+            console.log('Chefs data:', chefs);
+        } else {
+            console.log('Unexpected response format:', chefs);
+        }
+        
+        // Log each chef's cuisine specialties for debugging
+        chefs.forEach(chef => {
+            console.log(`Chef: ${chef.username}, Cuisine: ${chef.cuisine_specialties}`);
+        });
+        
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (chefs.length > 0) {
+            resultsContainer.innerHTML = `
+                <h4>Found ${chefs.length} chefs specializing in "${cuisine}"</h4>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Showing chefs who specialize in ${cuisine} cuisine
+                </div>
+                <div class="row g-4">
+                    ${chefs.map(chef => createChefCard(chef)).join('')}
+                </div>
+            `;
+        } else {
+            // If no chefs found for this cuisine, show all chefs with a message
+            console.log('No chefs found for cuisine, loading all chefs...');
+            const allChefsResponse = await fetch(`${API_BASE}/chefs/public/`, {
+                headers: headers
+            });
+            
+            if (allChefsResponse.ok) {
+                const allChefs = await allChefsResponse.json();
+                console.log('All chefs loaded:', allChefs.length);
+                
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No chefs found specifically for "${cuisine}" cuisine. Showing all available chefs instead.
+                    </div>
+                    <h4>All Available Chefs (${allChefs.length})</h4>
+                    <div class="row g-4">
+                        ${allChefs.map(chef => createChefCard(chef)).join('')}
+                    </div>
+                `;
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                        <h4>No chefs found for "${cuisine}"</h4>
+                        <p class="text-muted">Try searching with different cuisine types or browse all chefs</p>
+                        <button class="btn btn-primary" onclick="window.location.href='/'">
+                            <i class="fas fa-home me-2"></i>Back to Home
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('Error searching by cuisine:', error);
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Search Error</h4>
+                <p class="text-muted">Unable to search for cuisine. Please try again.</p>
+                <button class="btn btn-primary" onclick="window.location.href='/'">
+                    <i class="fas fa-home me-2"></i>Back to Home
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Search by general query
+async function searchByQuery(query) {
+    console.log('Searching by query:', query);
+    
+    try {
+        // Get auth token
+        const token = localStorage.getItem('authToken');
+        
+        // Prepare headers with auth token if available
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+            console.log('Including auth token in request');
+        } else {
+            console.log('No auth token available, making public request');
+        }
+        
+        const response = await fetch(`${API_BASE}/chefs/public/?search=${encodeURIComponent(query)}`, {
+            headers: headers
+        });
+        
+        console.log('Search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const chefs = await response.json();
+        console.log('Found chefs:', chefs.length);
+        
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (chefs.length > 0) {
+            resultsContainer.innerHTML = `
+                <h4>Found ${chefs.length} chefs for "${query}"</h4>
+                <div class="row g-4">
+                    ${chefs.map(chef => createChefCard(chef)).join('')}
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4>No results found for "${query}"</h4>
+                    <p class="text-muted">Try searching with different keywords or browse all chefs</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error searching by query:', error);
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Search Error</h4>
+                <p class="text-muted">Unable to complete search. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+// Apply comprehensive filters
+function applyFilters() {
+    const location = document.getElementById('locationInput').value.trim();
+    const radius = document.getElementById('radiusSlider').value;
+    
+    // Get selected cuisines
+    const selectedCuisines = [];
+    document.querySelectorAll('.cuisine-checkbox:checked').forEach(checkbox => {
+        selectedCuisines.push(checkbox.value);
+    });
+    
+    // Get selected meal types
+    const selectedMeals = [];
+    document.querySelectorAll('.meal-checkbox:checked').forEach(checkbox => {
+        selectedMeals.push(checkbox.value);
+    });
+    
+    // Get dietary preferences
+    const dietaryPreferences = [];
+    if (document.getElementById('vegetarian').checked) dietaryPreferences.push('vegetarian');
+    if (document.getElementById('nonVegetarian').checked) dietaryPreferences.push('non-vegetarian');
+    
+    // Get price range
+    const minPrice = document.getElementById('minPrice').value;
+    const maxPrice = document.getElementById('maxPrice').value;
+    
+    console.log('Applying filters:', {
+        location,
+        radius,
+        selectedCuisines,
+        selectedMeals,
+        dietaryPreferences,
+        minPrice,
+        maxPrice
+    });
+    
+    // Build search parameters
+    const params = new URLSearchParams();
+    
+    if (location) {
+        params.set('area', location);
+        if (radius) {
+            params.set('radius', radius);
+        }
+    }
+    
+    if (selectedCuisines.length > 0) {
+        params.set('cuisine', selectedCuisines.join(','));
+    }
+    
+    if (selectedMeals.length > 0) {
+        params.set('meal_type', selectedMeals.join(','));
+    }
+    
+    if (dietaryPreferences.length > 0) {
+        params.set('dietary', dietaryPreferences.join(','));
+    }
+    
+    if (minPrice) {
+        params.set('min_price', minPrice);
+    }
+    
+    if (maxPrice) {
+        params.set('max_price', maxPrice);
+    }
+    
+    // Navigate to filtered search
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    console.log('Navigating to:', newUrl);
+    window.location.href = newUrl;
+}
+
+// Clear all filters
+function clearFilters() {
+    // Clear all checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Clear text inputs
+    document.getElementById('locationInput').value = '';
+    document.getElementById('minPrice').value = '';
+    document.getElementById('maxPrice').value = '';
+    
+    // Reset radius slider
+    document.getElementById('radiusSlider').value = 5;
+    document.getElementById('radiusValue').textContent = '5';
+    
+    console.log('Filters cleared');
+}
+
+// Update radius display
+document.getElementById('radiusSlider').addEventListener('input', function() {
+    document.getElementById('radiusValue').textContent = this.value;
+});
+
+// Filter by category
+function filterByCategory(category) {
+    console.log('Category clicked:', category);
+    const url = `{% url 'search_page' %}?cuisine=${encodeURIComponent(category)}`;
+    console.log('Navigating to:', url);
+    window.location.href = url;
+}
+</script>
+
+<style>
+.chef-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chef-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.chef-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

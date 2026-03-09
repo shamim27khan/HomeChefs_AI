@@ -3,8 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import login, logout
-from .models import User, ChefProfile, CustomerProfile
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, ChefProfileSerializer, CustomerProfileSerializer
+from .models import User, ChefProfile, CustomerProfile, PhoneOTP
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, ChefProfileSerializer, CustomerProfileSerializer, OTPRequestSerializer, OTPVerifySerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -218,9 +218,72 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def user_login(request):
+    """Handle user login with either username/password or phone/OTP"""
     serializer = UserLoginSerializer(data=request.data)
+    
     if serializer.is_valid():
-        user = serializer.validated_data['user']
+        phone_number = serializer.validated_data.get('phone_number')
+        otp_code = serializer.validated_data.get('otp_code')
+        username = serializer.validated_data.get('username')
+        password = serializer.validated_data.get('password')
+        
+        if phone_number and otp_code:
+            # OTP-based login
+            try:
+                # Verify OTP first
+                is_valid, message = PhoneOTP.verify_otp(phone_number, otp_code)
+                
+                if not is_valid:
+                    return Response({
+                        'message': message,
+                        'error': 'invalid_otp'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Get user by phone number
+                try:
+                    user = User.objects.get(phone_number=phone_number)
+                    if not user.is_active:
+                        return Response({
+                            'message': 'User account is disabled',
+                            'error': 'account_disabled'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                except User.DoesNotExist:
+                    return Response({
+                        'message': 'No account found with this phone number',
+                        'error': 'user_not_found'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                except User.MultipleObjectsReturned:
+                    return Response({
+                        'message': 'Multiple accounts found with this phone number. Please contact support.',
+                        'error': 'multiple_users'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except Exception as e:
+                return Response({
+                    'message': f'Error during OTP login: {str(e)}',
+                    'error': 'server_error'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        elif username and password:
+            # Username/password login
+            user = authenticate(username=username, password=password)
+            if not user:
+                return Response({
+                    'message': 'Invalid credentials',
+                    'error': 'invalid_credentials'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            if not user.is_active:
+                return Response({
+                    'message': 'User account is disabled',
+                    'error': 'account_disabled'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({
+                'message': 'Invalid login method',
+                'error': 'invalid_method'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Common login logic for both methods
         login(request, user)
         token, created = Token.objects.get_or_create(user=user)
         
@@ -363,3 +426,74 @@ def profile(request):
         return Response({'message': 'Profile updated successfully'})
     
     return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def request_otp(request):
+    """Send OTP to phone number for verification"""
+    serializer = OTPRequestSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        phone_number = serializer.validated_data['phone_number']
+        
+        # Generate OTP
+        otp = PhoneOTP.generate_otp(phone_number)
+        
+        # For development, return the OTP in response
+        # In production, you would send this via SMS service
+        return Response({
+            'message': 'OTP sent successfully',
+            'otp_code': otp.otp_code,  # Remove this in production
+            'expires_at': otp.expires_at
+        }, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def verify_otp(request):
+    """Verify OTP for phone number"""
+    serializer = OTPVerifySerializer(data=request.data)
+    
+    if serializer.is_valid():
+        phone_number = serializer.validated_data['phone_number']
+        otp_code = serializer.validated_data['otp_code']
+        
+        try:
+            # Verify OTP
+            is_valid, message = PhoneOTP.verify_otp(phone_number, otp_code)
+            
+            if is_valid:
+                # Mark phone as verified for user if exists
+                try:
+                    user = User.objects.get(phone_number=phone_number)
+                    user.is_phone_verified = True
+                    user.save()
+                except User.DoesNotExist:
+                    pass  # User doesn't exist yet, that's okay
+                except User.MultipleObjectsReturned:
+                    # Multiple users found with same phone number - data integrity issue
+                    return Response({
+                        'message': 'Phone number verification failed: Multiple accounts found with this phone number. Please contact support.',
+                        'is_verified': False,
+                        'error_code': 'MULTIPLE_USERS'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                return Response({
+                    'message': message,
+                    'is_verified': True
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': message,
+                    'is_verified': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'message': f'Error during verification: {str(e)}',
+                'is_verified': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

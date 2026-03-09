@@ -1,0 +1,416 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Track Order - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-map-marked-alt me-2"></i>Track Order</h4>
+                </div>
+                <div class="card-body">
+                    <div id="trackingContent">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading order details...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Order Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6>Order Summary</h6>
+                </div>
+                <div class="card-body" id="orderSummary">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chef Information -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Chef Information</h6>
+                </div>
+                <div class="card-body" id="chefInfo">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Support -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="contactChef()">
+                            <i class="fas fa-phone me-2"></i>Contact Chef
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="contactSupport()">
+                            <i class="fas fa-headset me-2"></i>Customer Support
+                        </button>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Support available: 9 AM - 9 PM
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOrder = null;
+let trackingInterval = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Track Order page loaded');
+    
+    // Get order ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order_id') || window.location.pathname.split('/').slice(-2, -1)[0];
+    
+    if (orderId) {
+        loadOrderTracking(orderId);
+    } else {
+        document.getElementById('trackingContent').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Order ID not found. Please check your order confirmation email.
+            </div>
+        `;
+    }
+});
+
+async function loadOrderTracking(orderId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/mvp/orders/${orderId}/`, {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load order details');
+        }
+        
+        currentOrder = await response.json();
+        console.log('Order loaded for tracking:', currentOrder);
+        
+        displayTracking();
+        displayOrderSummary();
+        displayChefInfo();
+        
+        // Start real-time tracking for active orders
+        if (['pending', 'confirmed', 'preparing', 'ready'].includes(currentOrder.order_status)) {
+            startRealTimeTracking(orderId);
+        }
+        
+    } catch (error) {
+        console.error('Error loading order tracking:', error);
+        document.getElementById('trackingContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Unable to load order details. Please try again later.
+            </div>
+        `;
+    }
+}
+
+function displayTracking() {
+    const trackingContent = document.getElementById('trackingContent');
+    
+    const timeline = getOrderTimeline(currentOrder);
+    
+    trackingContent.innerHTML = `
+        <div class="order-timeline">
+            ${timeline.map((step, index) => `
+                <div class="timeline-item ${step.completed ? 'completed' : ''} ${step.active ? 'active' : ''}">
+                    <div class="timeline-icon">
+                        <i class="fas fa-${step.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h6>${step.title}</h6>
+                        <p class="text-muted">${step.description}</p>
+                        ${step.time ? `<small class="text-success">${step.time}</small>` : ''}
+                        ${step.estimatedTime ? `<small class="text-info">Est: ${step.estimatedTime}</small>` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function getOrderTimeline(order) {
+    const now = new Date();
+    const orderTime = new Date(order.created_at);
+    
+    const timeline = [
+        {
+            title: 'Order Placed',
+            description: 'Your order has been received and is being processed',
+            icon: 'shopping-cart',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: order.order_status === 'pending'
+        }
+    ];
+    
+    if (['confirmed', 'preparing', 'ready', 'delivered', 'cancelled'].includes(order.order_status)) {
+        timeline.push({
+            title: 'Order Confirmed',
+            description: 'Chef has confirmed your order and started preparation',
+            icon: 'check-circle',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: order.order_status === 'confirmed'
+        });
+    }
+    
+    if (['preparing', 'ready', 'delivered'].includes(order.order_status)) {
+        timeline.push({
+            title: 'Food Preparation',
+            description: 'Chef is preparing your delicious meal with care',
+            icon: 'utensils',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: order.order_status === 'preparing'
+        });
+    }
+    
+    if (['ready', 'delivered'].includes(order.order_status)) {
+        timeline.push({
+            title: 'Ready for Pickup/Delivery',
+            description: order.delivery_type === 'pickup' 
+                ? 'Your order is ready for pickup'
+                : 'Your order is out for delivery',
+            icon: order.delivery_type === 'pickup' ? 'store' : 'truck',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: order.order_status === 'ready'
+        });
+    }
+    
+    if (order.order_status === 'delivered') {
+        timeline.push({
+            title: 'Order Delivered',
+            description: 'Enjoy your delicious homemade meal!',
+            icon: 'home',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: false
+        });
+    }
+    
+    if (order.order_status === 'cancelled') {
+        timeline.push({
+            title: 'Order Cancelled',
+            description: 'This order has been cancelled',
+            icon: 'times-circle',
+            completed: true,
+            time: orderTime.toLocaleString(),
+            active: false
+        });
+    }
+    
+    // Add estimated times for pending steps
+    if (!['delivered', 'cancelled'].includes(order.order_status)) {
+        let estimatedTotal = 60; // 60 minutes total
+        let elapsed = (now - orderTime) / (1000 * 60); // minutes elapsed
+        
+        timeline.forEach((step, index) => {
+            if (!step.completed && index < timeline.length - 1) {
+                step.estimatedTime = `~${estimatedTotal - elapsed} mins`;
+                estimatedTotal -= 15; // each step ~15 mins
+            }
+        });
+    }
+    
+    return timeline;
+}
+
+function displayOrderSummary() {
+    const orderSummary = document.getElementById('orderSummary');
+    
+    orderSummary.innerHTML = `
+        <div class="mb-3">
+            <h6>Order #${currentOrder.order_id}</h6>
+            <span class="badge bg-warning">${currentOrder.order_status}</span>
+        </div>
+        <div class="mb-3">
+            <p><strong>${currentOrder.meal_details}</strong></p>
+            <p class="text-muted">${currentOrder.portions} portions × ₹${currentOrder.price_per_portion}</p>
+        </div>
+        <div class="mb-3">
+            <p><strong>Delivery Type:</strong> ${currentOrder.delivery_type}</p>
+            <p><strong>Payment:</strong> ${currentOrder.payment_method || 'Pending'}</p>
+        </div>
+        <div class="border-top pt-3">
+            <div class="d-flex justify-content-between">
+                <strong>Total Amount:</strong>
+                <strong>₹${currentOrder.total_amount}</strong>
+            </div>
+        </div>
+    `;
+}
+
+function displayChefInfo() {
+    const chefInfo = document.getElementById('chefInfo');
+    
+    chefInfo.innerHTML = `
+        <div class="text-center mb-3">
+            <img src="https://picsum.photos/seed/${currentOrder.chef_username}/80/80.jpg" 
+                 alt="${currentOrder.chef_username}" class="rounded-circle mb-2">
+            <h6>${currentOrder.chef_username}</h6>
+            <p class="text-muted small">Verified Chef</p>
+        </div>
+        <div class="d-grid gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="contactChef()">
+                <i class="fas fa-phone me-1"></i>Call Chef
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="messageChef()">
+                <i class="fas fa-comment me-1"></i>Message
+            </button>
+        </div>
+    `;
+}
+
+function startRealTimeTracking(orderId) {
+    // Refresh tracking every 30 seconds
+    trackingInterval = setInterval(() => {
+        loadOrderTracking(orderId);
+    }, 30000);
+}
+
+function contactChef() {
+    if (currentOrder && currentOrder.chef_phone) {
+        alert(`Chef contact: ${currentOrder.chef_phone}`);
+    } else {
+        alert('Chef contact information not available');
+    }
+}
+
+function messageChef() {
+    alert('Messaging feature coming soon!');
+}
+
+function contactSupport() {
+    alert('Customer Support: 1800-XXX-XXXX\nAvailable: 9 AM - 9 PM');
+}
+
+// Clean up interval when page unloads
+window.addEventListener('beforeunload', () => {
+    if (trackingInterval) {
+        clearInterval(trackingInterval);
+    }
+});
+</script>
+
+<style>
+.order-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 30px;
+    width: 2px;
+    height: calc(100% - 30px);
+    background: #e9ecef;
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+.timeline-item.completed::before {
+    background: #28a745;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -35px;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-item.completed .timeline-icon {
+    background: #28a745;
+    color: white;
+    box-shadow: 0 0 0 2px #28a745;
+}
+
+.timeline-item.active .timeline-icon {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 0 0 2px #007bff;
+    animation: pulse 2s infinite;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.timeline-content p {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 2px #007bff;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(0, 123, 255, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 0 2px #007bff;
+    }
+}
+</style>
+{% endblock %}

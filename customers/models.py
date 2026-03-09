@@ -46,6 +46,7 @@ class CustomerAddress(models.Model):
     ])
     address_line = models.TextField()
     landmark = models.CharField(max_length=200, blank=True, null=True)
+    address_identifier = models.CharField(max_length=100, blank=True, null=True, help_text="Custom address identifier like 'Near Central Park'")
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=50)
     postal_code = models.CharField(max_length=10)

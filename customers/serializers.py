@@ -44,7 +44,7 @@ class FoodReviewSerializer(serializers.ModelSerializer):
 class CustomerAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerAddress
-        fields = ['id', 'address_type', 'address_line', 'landmark', 'city', 'state', 'postal_code', 'is_default', 'created_at']
+        fields = ['id', 'address_type', 'address_line', 'landmark', 'address_identifier', 'city', 'state', 'postal_code', 'is_default', 'created_at']
         read_only_fields = ['id', 'customer', 'created_at']
 
 class SearchHistorySerializer(serializers.ModelSerializer):

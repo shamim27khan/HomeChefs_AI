@@ -1,0 +1,354 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Order Meal - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-utensils me-2"></i>
+                        Order Meal
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Meal details will be loaded here -->
+                    <div id="mealDetails">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading meal details...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Order form -->
+                    <div id="orderForm" style="display: none;">
+                        <hr>
+                        <h5>Order Details</h5>
+                        <form id="placeOrderForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="quantity" class="form-label">Quantity</label>
+                                    <div class="input-group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity()">-</button>
+                                        <input type="number" class="form-control text-center" id="quantity" value="1" min="1" readonly>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity()">+</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="totalPrice" class="form-label">Total Price</label>
+                                    <input type="text" class="form-control" id="totalPrice" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="deliveryType" class="form-label">Delivery Type</label>
+                                    <select class="form-select" id="deliveryType" onchange="updateDeliveryOptions()">
+                                        <option value="pickup">Pickup</option>
+                                        <option value="delivery">Delivery</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="orderTime" class="form-label">Preferred Time</label>
+                                    <input type="time" class="form-control" id="orderTime">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="specialInstructions" class="form-label">Special Instructions (Optional)</label>
+                                <textarea class="form-control" id="specialInstructions" rows="3" placeholder="Any special requests or dietary requirements?"></textarea>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary" onclick="addToCart()">
+                                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="placeOrder()">
+                                    <i class="fas fa-check me-2"></i>Place Order Now
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="goBack()">
+                                    <i class="fas fa-arrow-left me-2"></i>Back
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Order Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="orderSummary">
+                        <p class="text-muted">Select quantity to see order summary</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-truck me-2"></i>
+                        Delivery Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="deliveryInfo">
+                        <p class="text-muted">Select delivery type to see details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMeal = null;
+let currentQuantity = 1;
+let currentDeliveryType = 'pickup';
+
+// Load meal details on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const mealId = {{ meal_id }};
+    loadMealDetails(mealId);
+});
+
+// Load meal details from API
+async function loadMealDetails(mealId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+        }
+        
+        const response = await fetch(`${API_BASE}/chefs/today-meals/`, {
+            headers: headers
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load meal details');
+        }
+        
+        const meals = await response.json();
+        currentMeal = meals.find(meal => meal.id === mealId);
+        
+        if (!currentMeal) {
+            throw new Error('Meal not found');
+        }
+        
+        displayMealDetails();
+        document.getElementById('orderForm').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading meal details:', error);
+        document.getElementById('mealDetails').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load meal details. Please try again.
+            </div>
+        `;
+    }
+}
+
+// Display meal details
+function displayMealDetails() {
+    const mealDetails = document.getElementById('mealDetails');
+    mealDetails.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h4>${currentMeal.main_dish}</h4>
+                <p class="text-muted">${currentMeal.side_dish || ''}</p>
+                <p><strong>Chef:</strong> ${currentMeal.chef_username}</p>
+                <p><strong>Cuisine:</strong> ${currentMeal.chef_info?.cuisine_specialties || 'Not specified'}</p>
+                <p><strong>Available:</strong> ${currentMeal.available_portions} portions</p>
+                <p><strong>Order before:</strong> ${currentMeal.order_cutoff_time}</p>
+                ${currentMeal.additional_items ? `<p><strong>Includes:</strong> ${currentMeal.additional_items}</p>` : ''}
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="price-tag">₹${currentMeal.price_per_portion}</div>
+                <small class="text-muted">per portion</small>
+                ${currentMeal.chef_info?.is_verified ? '<div class="mt-2"><span class="badge bg-success"><i class="fas fa-check me-1"></i>Verified Chef</span></div>' : ''}
+            </div>
+        </div>
+    `;
+    
+    updateOrderSummary();
+}
+
+// Quantity controls
+function increaseQuantity() {
+    const maxQuantity = currentMeal.available_portions;
+    if (currentQuantity < maxQuantity) {
+        currentQuantity++;
+        document.getElementById('quantity').value = currentQuantity;
+        updateOrderSummary();
+    }
+}
+
+function decreaseQuantity() {
+    if (currentQuantity > 1) {
+        currentQuantity--;
+        document.getElementById('quantity').value = currentQuantity;
+        updateOrderSummary();
+    }
+}
+
+// Update order summary
+function updateOrderSummary() {
+    if (!currentMeal) return;
+    
+    const totalPrice = currentMeal.price_per_portion * currentQuantity;
+    document.getElementById('totalPrice').value = `₹${totalPrice}`;
+    
+    const orderSummary = document.getElementById('orderSummary');
+    orderSummary.innerHTML = `
+        <div class="d-flex justify-content-between mb-2">
+            <span>${currentMeal.main_dish} x ${currentQuantity}</span>
+            <span>₹${currentMeal.price_per_portion * currentQuantity}</span>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between fw-bold">
+            <span>Total</span>
+            <span>₹${totalPrice}</span>
+        </div>
+        <small class="text-muted">Available: ${currentMeal.available_portions} portions</small>
+    `;
+}
+
+// Update delivery options
+function updateDeliveryOptions() {
+    currentDeliveryType = document.getElementById('deliveryType').value;
+    const deliveryInfo = document.getElementById('deliveryInfo');
+    
+    if (currentDeliveryType === 'delivery' && currentMeal.delivery_available) {
+        deliveryInfo.innerHTML = `
+            <p><strong>Delivery Available</strong></p>
+            <p>Radius: ${currentMeal.delivery_radius} km</p>
+            <p>Estimated time: 30-45 minutes</p>
+            <small class="text-success">✓ Delivery available in your area</small>
+        `;
+    } else if (currentDeliveryType === 'pickup') {
+        deliveryInfo.innerHTML = `
+            <p><strong>Pickup Available</strong></p>
+            <p>Location: ${currentMeal.chef_info?.area || 'Chef location'}</p>
+            <p>Ready by: ${currentMeal.order_cutoff_time}</p>
+            <small class="text-info">📍 Pickup from chef location</small>
+        `;
+    } else {
+        deliveryInfo.innerHTML = `
+            <p class="text-danger"><strong>Delivery Not Available</strong></p>
+            <p>Please choose pickup option</p>
+        `;
+    }
+}
+
+// Add to cart
+function addToCart() {
+    if (!currentMeal) return;
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('Please login to add items to cart');
+        showLoginModal();
+        return;
+    }
+    
+    // Create cart item
+    const cartItem = {
+        id: currentMeal.id,  // Cart page expects 'id' field
+        meal_id: currentMeal.id,
+        main_dish: currentMeal.main_dish,
+        chef_username: currentMeal.chef_username,
+        quantity: currentQuantity,
+        price_per_portion: currentMeal.price_per_portion,
+        total_price: currentMeal.price_per_portion * currentQuantity,
+        delivery_type: currentDeliveryType,
+        special_instructions: document.getElementById('specialInstructions').value,
+        available_portions: currentMeal.available_portions,
+        is_orderable: currentMeal.is_orderable
+    };
+    
+    // Get existing cart or create new one
+    let cart = JSON.parse(localStorage.getItem('homechef_cart') || '[]');
+    
+    // Check if item already exists in cart
+    const existingItemIndex = cart.findIndex(item => 
+        item.meal_id === currentMeal.id && 
+        item.delivery_type === currentDeliveryType &&
+        item.special_instructions === document.getElementById('specialInstructions').value
+    );
+    
+    if (existingItemIndex !== -1) {
+        // Item exists, increment quantity and update availability
+        const newQuantity = cart[existingItemIndex].quantity + currentQuantity;
+        
+        // Check availability
+        if (currentMeal.available_portions !== undefined && newQuantity > currentMeal.available_portions) {
+            const message = `Only ${currentMeal.available_portions} portions available for ${currentMeal.main_dish}. You currently have ${cart[existingItemIndex].quantity} in cart.`;
+            if (confirm(message + '\n\nWould you like to go to your cart to modify your order?')) {
+                window.location.href = '/cart/';
+            }
+            return;
+        }
+        
+        cart[existingItemIndex].quantity = newQuantity;
+        cart[existingItemIndex].total_price = cart[existingItemIndex].price_per_portion * newQuantity;
+        cart[existingItemIndex].available_portions = currentMeal.available_portions;
+        cart[existingItemIndex].is_orderable = currentMeal.is_orderable;
+        alert(`Updated cart: ${cart[existingItemIndex].main_dish} quantity increased to ${cart[existingItemIndex].quantity}`);
+    } else {
+        // Item doesn't exist, add new item
+        cart.push(cartItem);
+        alert('Added to cart successfully!');
+    }
+    
+    localStorage.setItem('homechef_cart', JSON.stringify(cart));
+    
+    // Update cart counter in navigation
+    if (typeof updateCartCounter === 'function') {
+        updateCartCounter();
+    }
+    
+    window.location.href = '/cart/';
+}
+
+// Place order directly
+function placeOrder() {
+    if (!currentMeal) return;
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('Please login to place an order');
+        showLoginModal();
+        return;
+    }
+    
+    // Add to cart first, then redirect to checkout
+    addToCart();
+    window.location.href = '/cart/';
+}
+
+// Go back to previous page
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}

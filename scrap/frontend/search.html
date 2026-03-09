@@ -723,6 +723,49 @@
 
         // Initialize cart count
         updateCartCount();
+        
+        // Authentication Functions
+        function showLoginModal() {
+            // Redirect to login page
+            window.location.href = '/login/';
+        }
+        
+        function showRegisterModal() {
+            // Redirect to register page
+            window.location.href = '/register/';
+        }
+        
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+            alertDiv.style.zIndex = '9999';
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+        
+        // Check authentication status
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
+            
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    // Update login button to show username
+                    const loginBtn = document.querySelector('a[onclick="showLoginModal()"]');
+                    if (loginBtn) {
+                        loginBtn.innerHTML = `<i class="fas fa-user me-1"></i>${user.username}`;
+                        loginBtn.onclick = () => showAlert('Already logged in', 'info');
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            }
+        });
     </script>
 </body>
 </html>

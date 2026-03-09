@@ -1,0 +1,1458 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Chef Dashboard - HomeChefHub{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px 0;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    transition: transform 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-action-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    text-decoration: none;
+    color: inherit;
+}
+
+.quick-action-card i {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: #667eea;
+}
+
+.recent-orders {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.order-item {
+    padding: 15px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.order-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-confirmed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-preparing {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-ready {
+    background: #cce5ff;
+    color: #004085;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-3">Welcome back, Chef! 👨‍🍳</h1>
+                <p class="lead mb-0">Manage your meals, track orders, and grow your business</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex align-items-center justify-content-end">
+                    {% if request.user.profile_picture %}
+                        <img src="{{ request.user.profile_picture.url }}" alt="Profile" class="rounded-circle me-3" width="60" height="60">
+                    {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                            <i class="fas fa-user fa-2x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h5 class="mb-0">{{ request.user.get_full_name|default:request.user.username }}</h5>
+                        <small class="text-light">{{ request.user.chefprofile.area|default:"Location not set" }}</small>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light mt-1" onclick="showLocationModal()">
+                                <i class="fas fa-map-marker-alt me-1"></i>Update Location
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stat-number" id="todayOrders">0</div>
+                <div class="stat-label">Today's Orders</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stat-number" id="activeMeals">0</div>
+                <div class="stat-label">Active Meals</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stat-number" id="totalRevenue">₹0</div>
+                <div class="stat-label">Today's Revenue</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stat-number" id="avgRating">0.0</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="#" class="quick-action-card" onclick="showAddMealModal()">
+                <i class="fas fa-plus-circle"></i>
+                <h6>Add New Meal</h6>
+                <small class="text-muted">Create a new dish for today</small>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="quick-action-card" onclick="viewMeals()">
+                <i class="fas fa-utensils"></i>
+                <h6>Manage Meals</h6>
+                <small class="text-muted">Edit or deactivate meals</small>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="quick-action-card" onclick="viewAllOrders()">
+                <i class="fas fa-receipt"></i>
+                <h6>All Orders</h6>
+                <small class="text-muted">View complete order history</small>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="quick-action-card" onclick="viewAnalytics()">
+                <i class="fas fa-chart-line"></i>
+                <h6>Analytics</h6>
+                <small class="text-muted">Track your performance</small>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="recent-orders">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">Recent Orders</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewAllOrders()">View All</button>
+                </div>
+                <div id="recentOrdersContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="recent-orders">
+                <h5 class="mb-4">Today's Meals</h5>
+                <div id="todayMealsContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Meal Modal -->
+<div class="modal fade" id="addMealModal" tabindex="-1" aria-labelledby="addMealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMealModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Meal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMealForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="mealType" class="form-label">Meal Type *</label>
+                            <select class="form-select" id="mealType" required>
+                                <option value="">Select meal type</option>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snacks">Snacks</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="pricePerPortion" class="form-label">Price per Portion (₹) *</label>
+                            <input type="number" class="form-control" id="pricePerPortion" min="1" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mainDish" class="form-label">Main Dish *</label>
+                        <input type="text" class="form-control" id="mainDish" placeholder="e.g., Butter Chicken" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sideDish" class="form-label">Side Dish</label>
+                        <input type="text" class="form-control" id="sideDish" placeholder="e.g., Naan & Raita">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="additionalItems" class="form-label">Additional Items</label>
+                        <input type="text" class="form-control" id="additionalItems" placeholder="e.g., Salad & Pickle">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="extraPortions" class="form-label">Available Portions *</label>
+                            <input type="number" class="form-control" id="extraPortions" min="1" max="20" required>
+                            <small class="form-text text-muted">Maximum 20 portions per meal</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="orderCutoffTime" class="form-label">Order Cutoff Time *</label>
+                            <input type="time" class="form-control" id="orderCutoffTime" required>
+                            <small class="form-text text-muted">Last time customers can order</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="pickupAvailable" checked>
+                                <label class="form-check-label" for="pickupAvailable">
+                                    Pickup Available
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="deliveryAvailable">
+                                <label class="form-check-label" for="deliveryAvailable">
+                                    Delivery Available
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row" id="deliveryOptions" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            <label for="deliveryRadius" class="form-label">Delivery Radius (km)</label>
+                            <input type="number" class="form-control" id="deliveryRadius" min="1" max="10" value="3">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="deliveryFee" class="form-label">Delivery Fee (₹)</label>
+                            <input type="number" class="form-control" id="deliveryFee" min="0" step="0.01" value="30">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mealDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="mealDescription" rows="3" placeholder="Describe your meal, ingredients, cooking style, etc."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveMeal()">
+                    <i class="fas fa-save me-2"></i>Save Meal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Update Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="locationModalLabel">
+                    <i class="fas fa-map-marker-alt me-2"></i>Update Your Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="locationForm">
+                    <div class="mb-3">
+                        <label for="area" class="form-label">Area *</label>
+                        <input type="text" class="form-control" id="area" placeholder="e.g., Koramangala, Indiranagar" required>
+                        <small class="form-text text-muted">This will help customers find you</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="city" class="form-label">City *</label>
+                        <input type="text" class="form-control" id="city" placeholder="e.g., Bangalore, Mumbai" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="addressLine1" class="form-label">Address Line 1 *</label>
+                        <input type="text" class="form-control" id="addressLine1" placeholder="Street address" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="addressLine2" class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control" id="addressLine2" placeholder="Landmark, apartment, etc.">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="pincode" class="form-label">Pincode *</label>
+                        <input type="text" class="form-control" id="pincode" placeholder="e.g., 560001" pattern="[0-9]{6}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="latitude" class="form-label">Latitude</label>
+                            <input type="number" class="form-control" id="latitude" step="any" placeholder="e.g., 12.9716">
+                            <small class="form-text text-muted">Optional - for precise location</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="longitude" class="form-label">Longitude</label>
+                            <input type="number" class="form-control" id="longitude" step="any" placeholder="e.g., 77.5946">
+                            <small class="form-text text-muted">Optional - for precise location</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="getCurrentLocation()">
+                            <i class="fas fa-location-crosshairs me-1"></i>Use Current Location
+                        </button>
+                        <small class="form-text text-muted ms-2">Get coordinates from your browser location</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveLocation()">
+                    <i class="fas fa-save me-2"></i>Save Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Meals Modal -->
+<div class="modal fade" id="manageMealsModal" tabindex="-1" aria-labelledby="manageMealsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageMealsModalLabel">
+                    <i class="fas fa-utensils me-2"></i>Manage Your Meals
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Filter by Date:</h6>
+                        <input type="date" class="form-control" id="mealsFilterDate">
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Filter by Status:</h6>
+                        <select class="form-select" id="mealsFilterStatus">
+                            <option value="">All Meals</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Meal Type</th>
+                                <th>Main Dish</th>
+                                <th>Price</th>
+                                <th>Portions</th>
+                                <th>Orders</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mealsManagementTable">
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="showAddMealModal()">
+                    <i class="fas fa-plus me-2"></i>Add New Meal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Orders Modal -->
+<div class="modal fade" id="allOrdersModal" tabindex="-1" aria-labelledby="allOrdersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="allOrdersModalLabel">
+                    <i class="fas fa-receipt me-2"></i>All Orders
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <h6>Date Range:</h6>
+                        <input type="date" class="form-control" id="ordersStartDate">
+                    </div>
+                    <div class="col-md-4">
+                        <h6>To:</h6>
+                        <input type="date" class="form-control" id="ordersEndDate">
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Status:</h6>
+                        <select class="form-select" id="ordersStatusFilter">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="preparing">Preparing</option>
+                            <option value="ready">Ready</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Meal</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allOrdersTable">
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="exportOrders()">
+                    <i class="fas fa-download me-2"></i>Export Orders
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Modal -->
+<div class="modal fade" id="analyticsModal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analyticsModalLabel">
+                    <i class="fas fa-chart-line me-2"></i>Performance Analytics
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Period:</h6>
+                        <select class="form-select" id="analyticsPeriod">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Analytics Type:</h6>
+                        <select class="form-select" id="analyticsType">
+                            <option value="revenue">Revenue</option>
+                            <option value="orders">Orders</option>
+                            <option value="customers">Customers</option>
+                            <option value="meals">Popular Meals</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Analytics Chart</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="analyticsChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Key Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="analyticsMetrics">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="refreshAnalytics()">
+                    <i class="fas fa-sync me-2"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Check if user is being logged out
+const isLoggingOut = sessionStorage.getItem('isLoggingOut') === 'true';
+
+document.addEventListener('DOMContentLoaded', function() {
+    // If we're in the process of logging out, force redirect immediately
+    if (isLoggingOut) {
+        console.log('Detected logout in progress, forcing redirect to home...');
+        sessionStorage.removeItem('isLoggingOut');
+        window.location.href = '/';  // Use href instead of replace
+        return;
+    }
+    
+    loadDashboardData();
+});
+
+async function loadDashboardData() {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token found, redirecting to home page...');
+            // Use a more direct redirect method
+            window.location.href = '/';
+            return;
+        }
+
+        // Load dashboard stats
+        await Promise.all([
+            loadTodayStats(),
+            loadRecentOrders(),
+            loadTodayMeals()
+        ]);
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
+async function loadTodayStats() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/mvp/orders/chef-stats/', {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const stats = await response.json();
+            document.getElementById('todayOrders').textContent = stats.today_orders || 0;
+            document.getElementById('activeMeals').textContent = stats.active_meals || 0;
+            document.getElementById('totalRevenue').textContent = `₹${stats.today_revenue || 0}`;
+            document.getElementById('avgRating').textContent = (stats.average_rating || 0).toFixed(1);
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+async function loadRecentOrders() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/mvp/orders/chef-orders/', {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const orders = await response.json();
+            displayRecentOrders(orders.slice(0, 5)); // Show only 5 recent orders
+        }
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        document.getElementById('recentOrdersContainer').innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-receipt fa-2x mb-2"></i>
+                <p>No orders found</p>
+            </div>
+        `;
+    }
+}
+
+async function loadTodayMeals() {
+    try {
+        console.log('Loading today\'s meals...');
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/mvp/chefs/my-meals/', {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+
+        console.log('Meals response status:', response.status);
+        if (response.ok) {
+            const meals = await response.json();
+            console.log('Meals data received:', meals);
+            displayTodayMeals(meals);
+        } else {
+            console.error('Failed to load meals:', response.status);
+        }
+    } catch (error) {
+        console.error('Error loading meals:', error);
+        document.getElementById('todayMealsContainer').innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-utensils fa-2x mb-2"></i>
+                <p>No meals for today</p>
+            </div>
+        `;
+    }
+}
+
+function displayRecentOrders(orders) {
+    const container = document.getElementById('recentOrdersContainer');
+    
+    if (orders.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-receipt fa-2x mb-2"></i>
+                <p>No recent orders</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = orders.map(order => `
+        <div class="order-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">Order #${order.order_id || order.id}</h6>
+                    <small class="text-muted">${order.customer_username || 'N/A'} • ${order.meal_name || 'Meal'} × ${order.portions || 0}</small>
+                </div>
+                <div class="text-end">
+                    <strong>₹${order.total_amount || 0}</strong>
+                    <br>
+                    <small class="text-muted">${new Date(order.order_time).toLocaleDateString()}</small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function displayTodayMeals(meals) {
+    const container = document.getElementById('todayMealsContainer');
+    
+    if (meals.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-utensils fa-2x mb-2"></i>
+                <p>No meals for today</p>
+                <button class="btn btn-sm btn-primary" onclick="showAddMealModal()">
+                    <i class="fas fa-plus me-1"></i>Add Meal
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = meals.map(meal => `
+        <div class="order-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">${meal.main_dish}</h6>
+                    <small class="text-muted">${meal.available_portions}/${meal.extra_portions} available</small>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">₹${meal.price_per_portion}</small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showLocationModal() {
+    loadCurrentLocation();
+    const modal = new bootstrap.Modal(document.getElementById('locationModal'));
+    modal.show();
+}
+
+function loadCurrentLocation() {
+    // Load existing chef profile data
+    const token = localStorage.getItem('authToken');
+    fetch('/api/mvp/chefs/profile/', {
+        headers: {
+            'Authorization': `Token ${token}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Populate form with existing data
+        document.getElementById('area').value = data.area || '';
+        document.getElementById('city').value = data.city || '';
+        document.getElementById('addressLine1').value = data.address_line1 || '';
+        document.getElementById('addressLine2').value = data.address_line2 || '';
+        document.getElementById('pincode').value = data.pincode || '';
+        document.getElementById('latitude').value = data.latitude || '';
+        document.getElementById('longitude').value = data.longitude || '';
+    })
+    .catch(error => {
+        console.error('Error loading profile:', error);
+    });
+}
+
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                alert('Location captured successfully!');
+            },
+            (error) => {
+                console.error('Error getting location:', error);
+                alert('Unable to get your location. Please enter coordinates manually.');
+            }
+        );
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+
+function saveLocation() {
+    const form = document.getElementById('locationForm');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const locationData = {
+        area: document.getElementById('area').value,
+        city: document.getElementById('city').value,
+        address_line1: document.getElementById('addressLine1').value,
+        address_line2: document.getElementById('addressLine2').value,
+        pincode: document.getElementById('pincode').value,
+        latitude: document.getElementById('latitude').value || null,
+        longitude: document.getElementById('longitude').value || null
+    };
+    
+    const token = localStorage.getItem('authToken');
+    
+    fetch('/api/mvp/chefs/profile/', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify(locationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+        modal.hide();
+        
+        // Show success message
+        alert('Location updated successfully!');
+        
+        // Reload page to update the display
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error saving location:', error);
+        alert('Error: Failed to save location. Please try again.');
+    });
+}
+
+function showAddMealModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addMealModal'));
+    modal.show();
+}
+
+function saveMeal() {
+    console.log('saveMeal function called!');
+    const form = document.getElementById('addMealForm');
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        console.log('Form validation failed');
+        form.reportValidity();
+        return;
+    }
+    
+    console.log('Form validation passed');
+    
+    // Collect form data
+    const now = new Date();
+    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    
+    const mealData = {
+        date: localDate, // Use local timezone date
+        meal_type: document.getElementById('mealType').value,
+        price_per_portion: parseFloat(document.getElementById('pricePerPortion').value),
+        main_dish: document.getElementById('mainDish').value,
+        side_dish: document.getElementById('sideDish').value,
+        additional_items: document.getElementById('additionalItems').value,
+        extra_portions: parseInt(document.getElementById('extraPortions').value),
+        order_cutoff_time: document.getElementById('orderCutoffTime').value,
+        pickup_available: document.getElementById('pickupAvailable').checked,
+        delivery_available: document.getElementById('deliveryAvailable').checked,
+        delivery_radius: document.getElementById('deliveryAvailable').checked ? parseInt(document.getElementById('deliveryRadius').value) : 3,
+        delivery_fee: document.getElementById('deliveryAvailable').checked ? parseFloat(document.getElementById('deliveryFee').value) : 0,
+        description: document.getElementById('mealDescription').value
+    };
+    
+    console.log('Meal data to be sent:', mealData);
+    
+    // Save meal via API
+    createMeal(mealData);
+}
+
+async function createMeal(mealData) {
+    console.log('createMeal function called with data:', mealData);
+    try {
+        const token = localStorage.getItem('authToken');
+        console.log('Token:', token ? 'exists' : 'missing');
+        
+        const response = await fetch('/api/mvp/chefs/daily-meals/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            },
+            body: JSON.stringify(mealData)
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (response.ok) {
+            const meal = await response.json();
+            console.log('Meal created successfully:', meal);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addMealModal'));
+            modal.hide();
+            
+            // Reset form
+            document.getElementById('addMealForm').reset();
+            
+            // Show success message
+            alert('Meal added successfully!');
+            
+            // Reload dashboard data
+            console.log('Reloading dashboard data...');
+            await loadDashboardData();
+            
+        } else {
+            const errorData = await response.json();
+            console.error('Error response:', errorData);
+            const errorMessage = errorData.error || errorData.detail || 'Failed to add meal';
+            alert('Error: ' + errorMessage);
+        }
+        
+    } catch (error) {
+        console.error('Error creating meal:', error);
+        alert('Error: Failed to add meal. Please try again.');
+    }
+}
+
+function viewMeals() {
+    // Show meals management modal
+    showMealsManagementModal();
+}
+
+function viewAllOrders() {
+    // Show all orders modal
+    showAllOrdersModal();
+}
+
+function viewAnalytics() {
+    // Show analytics modal
+    showAnalyticsModal();
+}
+
+// Modal functions
+function showMealsManagementModal() {
+    loadMealsManagement();
+    const modal = new bootstrap.Modal(document.getElementById('manageMealsModal'));
+    modal.show();
+}
+
+function showAllOrdersModal() {
+    loadAllOrders();
+    const modal = new bootstrap.Modal(document.getElementById('allOrdersModal'));
+    modal.show();
+}
+
+function showAnalyticsModal() {
+    loadAnalytics();
+    const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+    modal.show();
+}
+
+// Load functions for modals
+async function loadMealsManagement() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const dateFilter = document.getElementById('mealsFilterDate').value;
+        const statusFilter = document.getElementById('mealsFilterStatus').value;
+        
+        let url = '/api/mvp/chefs/daily-meals/';
+        const params = new URLSearchParams();
+        if (dateFilter) params.append('date', dateFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        if (params.toString()) url += '?' + params.toString();
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const meals = await response.json();
+            displayMealsManagement(meals);
+        } else {
+            document.getElementById('mealsManagementTable').innerHTML = `
+                <tr><td colspan="8" class="text-center py-4 text-danger">Failed to load meals</td></tr>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading meals:', error);
+        document.getElementById('mealsManagementTable').innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-danger">Error loading meals</td></tr>
+        `;
+    }
+}
+
+function displayMealsManagement(meals) {
+    const tbody = document.getElementById('mealsManagementTable');
+    
+    if (!meals || meals.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-muted">No meals found</td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = meals.map(meal => `
+        <tr>
+            <td>${meal.date}</td>
+            <td><span class="badge bg-primary">${meal.meal_type}</span></td>
+            <td>${meal.main_dish}</td>
+            <td>₹${meal.price_per_portion}</td>
+            <td>${meal.available_portions}/${meal.extra_portions}</td>
+            <td>${meal.current_orders || 0}</td>
+            <td><span class="badge ${meal.is_active ? 'bg-success' : 'bg-secondary'}">${meal.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="editMeal(${meal.id})">Edit</button>
+                <button class="btn btn-sm ${meal.is_active ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="toggleMealStatus(${meal.id})">
+                    ${meal.is_active ? 'Deactivate' : 'Activate'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadAllOrders() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const startDate = document.getElementById('ordersStartDate').value;
+        const endDate = document.getElementById('ordersEndDate').value;
+        const statusFilter = document.getElementById('ordersStatusFilter').value;
+        
+        let url = '/api/mvp/orders/chef/';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (statusFilter) params.append('status', statusFilter);
+        if (params.toString()) url += '?' + params.toString();
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const orders = await response.json();
+            displayAllOrders(orders);
+        } else {
+            document.getElementById('allOrdersTable').innerHTML = `
+                <tr><td colspan="8" class="text-center py-4 text-danger">Failed to load orders</td></tr>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        document.getElementById('allOrdersTable').innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-danger">Error loading orders</td></tr>
+        `;
+    }
+}
+
+function displayAllOrders(orders) {
+    const tbody = document.getElementById('allOrdersTable');
+    
+    if (!orders || orders.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-muted">No orders found</td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = orders.map(order => `
+        <tr>
+            <td>#${order.id}</td>
+            <td>${new Date(order.order_time).toLocaleDateString()}</td>
+            <td>${order.customer_username || 'N/A'}</td>
+            <td>${order.meal_name || 'Meal'}</td>
+            <td>${order.portions || 0}</td>
+            <td>₹${order.total_amount || 0}</td>
+            <td><span class="badge bg-${getStatusColor(order.order_status)}">${order.order_status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails(${order.id})">View</button>
+                ${order.order_status === 'pending' ? `<button class="btn btn-sm btn-outline-success" onclick="confirmOrder(${order.id})">Confirm</button>` : ''}
+                ${order.order_status === 'confirmed' ? `<button class="btn btn-sm btn-outline-info" onclick="startPreparing(${order.id})">Start Preparing</button>` : ''}
+                ${order.order_status === 'preparing' ? `<button class="btn btn-sm btn-outline-primary" onclick="markReady(${order.id})">Mark Ready</button>` : ''}
+                ${order.order_status === 'ready' ? `<button class="btn btn-sm btn-outline-warning" onclick="markAsDelivered(${order.id})">Mark Delivered</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'pending': 'warning',
+        'confirmed': 'info',
+        'preparing': 'primary',
+        'ready': 'success',
+        'delivered': 'dark',
+        'completed': 'success',
+        'cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+async function loadAnalytics() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const period = document.getElementById('analyticsPeriod').value;
+        const type = document.getElementById('analyticsType').value;
+        
+        const response = await fetch(`/api/mvp/orders/chef-stats/?period=${period}&type=${type}`, {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayAnalytics(data);
+        } else {
+            document.getElementById('analyticsMetrics').innerHTML = `
+                <div class="text-center py-4 text-danger">Failed to load analytics</div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        document.getElementById('analyticsMetrics').innerHTML = `
+            <div class="text-center py-4 text-danger">Error loading analytics</div>
+        `;
+    }
+}
+
+function displayAnalytics(data) {
+    const metricsHtml = `
+        <div class="mb-3">
+            <strong>Total Revenue:</strong> ₹${data.total_revenue || 0}
+        </div>
+        <div class="mb-3">
+            <strong>Total Orders:</strong> ${data.total_orders || 0}
+        </div>
+        <div class="mb-3">
+            <strong>Average Order Value:</strong> ₹${data.average_order_value || 0}
+        </div>
+        <div class="mb-3">
+            <strong>Unique Customers:</strong> ${data.unique_customers || 0}
+        </div>
+        <div class="mb-3">
+            <strong>Most Popular Meal:</strong> ${data.most_popular_meal || 'N/A'}
+        </div>
+    `;
+    
+    document.getElementById('analyticsMetrics').innerHTML = metricsHtml;
+    
+    // Simple chart visualization (you can enhance this with Chart.js)
+    const canvas = document.getElementById('analyticsChart');
+    const ctx = canvas.getContext('2d');
+    // Add basic chart rendering here
+}
+
+// Action functions
+function editMeal(mealId) {
+    // Load meal data and show edit modal
+    console.log('Edit meal:', mealId);
+    // Implementation would load meal data and populate edit form
+}
+
+function toggleMealStatus(mealId) {
+    // Toggle meal active/inactive status
+    console.log('Toggle meal status:', mealId);
+    // Implementation would call API to toggle status
+}
+
+function viewOrderDetails(orderId) {
+    // Show order details modal
+    console.log('View order details:', orderId);
+    loadOrderDetails(orderId);
+}
+
+function confirmOrder(orderId) {
+    // Confirm pending order
+    console.log('Confirm order:', orderId);
+    
+    if (confirm('Are you sure you want to confirm this order?')) {
+        const token = localStorage.getItem('authToken');
+        
+        fetch(`/api/mvp/orders/${orderId}/confirm/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (response.ok) {
+                alert('Order confirmed successfully!');
+                // Refresh the orders list
+                loadAllOrders();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to confirm order'));
+            }
+        })
+        .catch(error => {
+            console.error('Error confirming order:', error);
+            alert('Error: Failed to confirm order. Please try again.');
+        });
+    }
+}
+
+function markAsDelivered(orderId) {
+    // Mark ready order as delivered
+    console.log('Mark as delivered:', orderId);
+    
+    if (confirm('Are you sure you want to mark this order as delivered?')) {
+        const token = localStorage.getItem('authToken');
+        
+        fetch(`/api/mvp/orders/${orderId}/deliver/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (response.ok) {
+                alert('Order marked as delivered successfully!');
+                // Refresh the orders list
+                loadAllOrders();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to mark order as delivered'));
+            }
+        })
+        .catch(error => {
+            console.error('Error marking as delivered:', error);
+            alert('Error: Failed to mark order as delivered. Please try again.');
+        });
+    }
+}
+
+function startPreparing(orderId) {
+    // Start preparing confirmed order
+    console.log('Start preparing:', orderId);
+    
+    if (confirm('Start preparing this order?')) {
+        updateOrderStatus(orderId, 'preparing', 'Order preparation started!');
+    }
+}
+
+function markReady(orderId) {
+    // Mark preparing order as ready
+    console.log('Mark ready:', orderId);
+    
+    if (confirm('Mark this order as ready for delivery/pickup?')) {
+        updateOrderStatus(orderId, 'ready', 'Order marked as ready!');
+    }
+}
+
+function updateOrderStatus(orderId, newStatus, successMessage) {
+    const token = localStorage.getItem('authToken');
+    
+    fetch(`/api/mvp/orders/${orderId}/status/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify({
+            order_status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (response.ok) {
+            alert(successMessage);
+            loadAllOrders(); // Refresh orders list
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update order status'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating order status:', error);
+        alert('Error: Failed to update order status. Please try again.');
+    });
+}
+
+function loadOrderDetails(orderId) {
+    const token = localStorage.getItem('authToken');
+    
+    fetch(`/api/mvp/orders/${orderId}/`, {
+        headers: {
+            'Authorization': `Token ${token}`
+        }
+    })
+    .then(response => response.json())
+    .then(order => {
+        showOrderDetailsModal(order);
+    })
+    .catch(error => {
+        console.error('Error loading order details:', error);
+        alert('Error: Failed to load order details.');
+    });
+}
+
+function showOrderDetailsModal(order) {
+    // Create a simple modal to show order details
+    const modalHtml = `
+        <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Order Details #${order.id}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Customer:</strong></div>
+                            <div class="col-6">${order.customer_username}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Meal:</strong></div>
+                            <div class="col-6">${order.meal_details || 'Meal'}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Portions:</strong></div>
+                            <div class="col-6">${order.portions}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Total Amount:</strong></div>
+                            <div class="col-6">₹${order.total_amount}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Delivery Type:</strong></div>
+                            <div class="col-6">${order.delivery_type}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Order Status:</strong></div>
+                            <div class="col-6"><span class="badge bg-${getStatusColor(order.order_status)}">${order.order_status}</span></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Order Time:</strong></div>
+                            <div class="col-6">${new Date(order.order_time).toLocaleString()}</div>
+                        </div>
+                        ${order.special_instructions ? `
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Special Instructions:</strong></div>
+                            <div class="col-6">${order.special_instructions}</div>
+                        </div>
+                        ` : ''}
+                        ${order.delivery_address ? `
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Delivery Address:</strong></div>
+                            <div class="col-6">${order.delivery_address}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        ${order.order_status === 'pending' ? `
+                            <button type="button" class="btn btn-success" onclick="confirmOrder(${order.id})">Confirm Order</button>
+                        ` : ''}
+                        ${order.order_status === 'confirmed' ? `
+                            <button type="button" class="btn btn-info" onclick="startPreparing(${order.id})">Start Preparing</button>
+                        ` : ''}
+                        ${order.order_status === 'preparing' ? `
+                            <button type="button" class="btn btn-primary" onclick="markReady(${order.id})">Mark Ready</button>
+                        ` : ''}
+                        ${order.order_status === 'ready' ? `
+                            <button type="button" class="btn btn-warning" onclick="markAsDelivered(${order.id})">Mark as Delivered</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('orderDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body and show it
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+    modal.show();
+}
+
+function exportOrders() {
+    // Export orders to CSV/Excel
+    console.log('Export orders');
+    // Implementation would generate and download file
+}
+
+function refreshAnalytics() {
+    loadAnalytics();
+}
+
+// Handle delivery options visibility
+document.addEventListener('DOMContentLoaded', function() {
+    const deliveryCheckbox = document.getElementById('deliveryAvailable');
+    const deliveryOptions = document.getElementById('deliveryOptions');
+    
+    if (deliveryCheckbox) {
+        deliveryCheckbox.addEventListener('change', function() {
+            deliveryOptions.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    loadDashboardData();
+});
+</script>
+{% endblock %}

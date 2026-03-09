@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HomeChefHub - Homemade Food Delivery{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        :root {
+            --primary-color: #e23744;
+            --secondary-color: #2d2d2d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-bg);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), #ff6b6b);
+            color: white;
+            padding: 60px 0;
+        }
+        
+        .chef-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        
+        .chef-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .meal-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .meal-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .badge-available {
+            background-color: var(--success-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .badge-limited {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .price-tag {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .chef-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .verified-badge {
+            color: var(--success-color);
+            font-size: 0.875rem;
+        }
+        
+        .cutoff-timer {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .btn-order {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-order:hover {
+            background-color: #d63038;
+            transform: translateY(-2px);
+        }
+        
+        .btn-order:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .nearby-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+        }
+        
+        .radius-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .radius-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .radius-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .radius-display {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .location-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .location-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        .distance-badge {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+        
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-home me-2"></i>HomeChefHub
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cart/">
+                            <i class="fas fa-shopping-cart me-1"></i>Cart
+                            <span class="badge bg-danger rounded-pill cart-counter" style="display: none;">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showLoginModal()">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showRegisterModal()">
+                            <i class="fas fa-user-plus me-1"></i>Sign Up
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>HomeChefHub</h5>
+                    <p>Connecting home cooks with hungry customers, one meal at a time.</p>
+                    <div class="mt-3">
+                        <a href="/swagger/" class="text-white me-3" target="_blank">
+                            <i class="fas fa-book me-1"></i>API Docs
+                        </a>
+                        <a href="/redoc/" class="text-white" target="_blank">
+                            <i class="fas fa-code me-1"></i>ReDoc
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5>Contact</h5>
+                    <p>Email: contact@homechefs.local</p>
+                    <p>Phone: +91 98765 43210</p>
+                </div>
+            </div>
+            <hr class="my-4 bg-white">
+            <div class="text-center">
+                <p>&copy; 2024 HomeChefHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Registration Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerModalLabel">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                    <div class="form-text">3-30 characters, letters, numbers, and underscores only</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                    <div class="form-text">We'll send you a confirmation email</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone_number" class="form-label">Phone Number *</label>
+                                    <div class="input-group">
+                                        <input type="tel" class="form-control" id="phone_number" name="phone_number" placeholder="+91 98765 43210" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="sendOTP()" id="sendOtpBtn">
+                                            Send OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text">We'll send a verification code to this number</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="otp_code" class="form-label">Verification Code</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="otp_code" name="otp_code" placeholder="Enter 6-digit code" maxlength="6">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="verifyOTP()" id="verifyOtpBtn">
+                                            Verify
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="otpStatus">Enter the OTP sent to your phone</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">I want to *</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="role" id="role_customer" value="customer" required>
+                                        <label class="btn btn-outline-primary" for="role_customer">
+                                            <i class="fas fa-utensils me-2"></i>
+                                            Order Food
+                                            <small class="d-block text-muted">Customer</small>
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="role" id="role_chef" value="chef">
+                                        <label class="btn btn-outline-primary" for="role_chef">
+                                            <i class="fas fa-chef-hat me-2"></i>
+                                            Sell Food
+                                            <small class="d-block text-muted">Chef</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                    </div>
+                                    <div class="form-text">Minimum 8 characters, letters and numbers</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="terms" required>
+                                        <label class="form-check-label" for="terms">
+                                            I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a> *
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Chef Registration:</strong> After registration, you'll need to complete your chef profile and get verified to start selling.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="handleRegister()">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="loginModalLabel">
+                        <i class="fas fa-sign-in-alt me-2 text-primary"></i>
+                        Welcome Back
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Login Method Tabs -->
+                    <ul class="nav nav-pills nav-justified mb-4" id="loginMethodTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="password-tab" data-bs-toggle="pill" data-bs-target="#password-login" type="button" role="tab" aria-controls="password-login" aria-selected="true">
+                                <i class="fas fa-key me-2"></i>Password
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="otp-tab" data-bs-toggle="pill" data-bs-target="#otp-login" type="button" role="tab" aria-controls="otp-login" aria-selected="false">
+                                <i class="fas fa-mobile-alt me-2"></i>OTP
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="loginMethodTabContent">
+                        <!-- Password Login -->
+                        <div class="tab-pane fade show active" id="password-login" role="tabpanel" aria-labelledby="password-tab">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="loginUsername" class="form-label">Username or Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="loginUsername" name="loginUsername" placeholder="Enter your username or email">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginPassword" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                        <input type="password" class="form-control" id="loginPassword" name="loginPassword" placeholder="Enter your password">
+                                    </div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- OTP Login -->
+                        <div class="tab-pane fade" id="otp-login" role="tabpanel" aria-labelledby="otp-tab">
+                            <form id="otpLoginForm">
+                                <div class="mb-3">
+                                    <label for="loginPhoneNumber" class="form-label">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
+                                        <input type="tel" class="form-control" id="loginPhoneNumber" name="loginPhoneNumber" placeholder="Enter your phone number">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="sendLoginOTP()" id="sendLoginOtpBtn">
+                                            Send OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="loginOtpStatus">We'll send a verification code to this number</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginOtpCode" class="form-label">Verification Code</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+                                        <input type="text" class="form-control" id="loginOtpCode" name="loginOtpCode" placeholder="Enter 6-digit code" maxlength="6">
+                                        <button class="btn btn-primary" type="button" onclick="verifyLoginOTP()" id="verifyLoginOtpBtn">
+                                            Login with OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="loginOtpVerifyStatus">Enter the OTP sent to your phone</div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2" id="passwordLoginBtn">
+                        <button type="button" class="btn btn-primary btn-lg" onclick="handleLogin()">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Don't have an account? 
+                            <a href="#" onclick="showRegisterModal(); return false;" class="text-primary">Register here</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // OTP functionality
+        let isPhoneVerified = false;
+        
+        // Send OTP to phone number
+        async function sendOTP() {
+            const phoneNumber = document.getElementById('phone_number').value.trim();
+            
+            if (!phoneNumber) {
+                showAlert('Please enter a phone number', 'danger');
+                return;
+            }
+            
+            // Basic phone number validation
+            if (!phoneNumber.match(/^[\d\s\-\+\(\)]+$/) || phoneNumber.replace(/\D/g, '').length < 10) {
+                showAlert('Please enter a valid phone number', 'danger');
+                return;
+            }
+            
+            try {
+                const sendBtn = document.getElementById('sendOtpBtn');
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                
+                const response = await fetch('/api/auth/request-otp/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone_number: phoneNumber })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert(`OTP sent successfully! For development, OTP is: ${result.otp_code}`, 'success');
+                    document.getElementById('otpStatus').textContent = 'OTP sent! Check your phone.';
+                    document.getElementById('otpStatus').className = 'form-text text-success';
+                    
+                    // Enable verify button
+                    document.getElementById('verifyOtpBtn').disabled = false;
+                    
+                    // Start countdown for resend
+                    startResendCountdown();
+                } else {
+                    showAlert(result.phone_number ? result.phone_number[0] : 'Failed to send OTP', 'danger');
+                }
+            } catch (error) {
+                console.error('OTP send error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Send OTP';
+            }
+        }
+        
+        // Verify OTP
+        async function verifyOTP() {
+            const phoneNumber = document.getElementById('phone_number').value.trim();
+            const otpCode = document.getElementById('otp_code').value.trim();
+            
+            if (!phoneNumber || !otpCode) {
+                showAlert('Please enter phone number and OTP', 'danger');
+                return;
+            }
+            
+            if (otpCode.length !== 6) {
+                showAlert('OTP must be 6 digits', 'danger');
+                return;
+            }
+            
+            try {
+                const verifyBtn = document.getElementById('verifyOtpBtn');
+                const originalText = verifyBtn.innerHTML;
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+                
+                const response = await fetch('/api/auth/verify-otp/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        phone_number: phoneNumber,
+                        otp_code: otpCode
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.is_verified) {
+                    isPhoneVerified = true;
+                    showAlert('Phone number verified successfully!', 'success');
+                    document.getElementById('otpStatus').textContent = '✓ Phone verified';
+                    document.getElementById('otpStatus').className = 'form-text text-success';
+                    
+                    // Disable OTP inputs after successful verification
+                    document.getElementById('otp_code').disabled = true;
+                    document.getElementById('verifyOtpBtn').disabled = true;
+                    document.getElementById('sendOtpBtn').disabled = true;
+                    
+                    // Update send button text
+                    document.getElementById('sendOtpBtn').innerHTML = '✓ Verified';
+                    document.getElementById('verifyOtpBtn').innerHTML = '✓ Verified';
+                } else {
+                    showAlert(result.message || 'Invalid OTP', 'danger');
+                    document.getElementById('otpStatus').textContent = result.message || 'Invalid OTP';
+                    document.getElementById('otpStatus').className = 'form-text text-danger';
+                }
+            } catch (error) {
+                console.error('OTP verification error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+                document.getElementById('otpStatus').textContent = 'Network error. Please try again.';
+                document.getElementById('otpStatus').className = 'form-text text-danger';
+            } finally {
+                if (!isPhoneVerified) {
+                    const verifyBtn = document.getElementById('verifyOtpBtn');
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = originalText;
+                }
+            }
+        }
+        
+        // Start countdown for resend OTP
+        function startResendCountdown() {
+            let countdown = 60;
+            const sendBtn = document.getElementById('sendOtpBtn');
+            
+            // Clear any existing countdown
+            if (sendBtn.countdownInterval) {
+                clearInterval(sendBtn.countdownInterval);
+            }
+            
+            sendBtn.countdownInterval = setInterval(() => {
+                if (countdown > 0) {
+                    sendBtn.disabled = true;
+                    sendBtn.innerHTML = `Resend (${countdown}s)`;
+                    countdown--;
+                } else {
+                    clearInterval(sendBtn.countdownInterval);
+                    sendBtn.countdownInterval = null;
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = 'Resend OTP';
+                }
+            }, 1000);
+        }
+        
+        // Login OTP functionality
+        // Send OTP for login
+        async function sendLoginOTP() {
+            console.log('sendLoginOTP called');
+            
+            const phoneNumber = document.getElementById('loginPhoneNumber').value.trim();
+            
+            console.log('Phone number entered:', phoneNumber);
+            
+            if (!phoneNumber) {
+                showAlert('Please enter a phone number', 'danger');
+                return;
+            }
+            
+            // Basic phone number validation
+            if (!phoneNumber.match(/^[\d\s\-\+\(\)]+$/) || phoneNumber.replace(/\D/g, '').length < 10) {
+                showAlert('Please enter a valid phone number', 'danger');
+                return;
+            }
+            
+            try {
+                const sendBtn = document.getElementById('sendLoginOtpBtn');
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                
+                console.log('Sending OTP request for:', phoneNumber);
+                
+                const response = await fetch('/api/auth/request-otp/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone_number: phoneNumber })
+                });
+                
+                console.log('OTP request response status:', response.status);
+                
+                const result = await response.json();
+                console.log('OTP request result:', result);
+                
+                if (response.ok) {
+                    showAlert(`OTP sent successfully! For development, OTP is: ${result.otp_code}`, 'success');
+                    document.getElementById('loginOtpStatus').textContent = 'OTP sent! Check your phone.';
+                    document.getElementById('loginOtpStatus').className = 'form-text text-success';
+                    
+                    // Enable verify button
+                    document.getElementById('verifyLoginOtpBtn').disabled = false;
+                    
+                    // Start countdown for resend
+                    startLoginResendCountdown();
+                } else {
+                    showAlert(result.phone_number ? result.phone_number[0] : 'Failed to send OTP', 'danger');
+                }
+            } catch (error) {
+                console.error('OTP send error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+            } finally {
+                const sendBtn = document.getElementById('sendLoginOtpBtn');
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Send OTP';
+            }
+        }
+        
+        // Verify OTP for login
+        async function verifyLoginOTP() {
+            console.log('verifyLoginOTP called');
+            
+            const phoneNumber = document.getElementById('loginPhoneNumber').value.trim();
+            const otpCode = document.getElementById('loginOtpCode').value.trim();
+            
+            console.log('Phone:', phoneNumber, 'OTP:', otpCode);
+            
+            if (!phoneNumber || !otpCode) {
+                showAlert('Please enter phone number and OTP', 'danger');
+                return;
+            }
+            
+            if (otpCode.length !== 6) {
+                showAlert('OTP must be 6 digits', 'danger');
+                return;
+            }
+            
+            try {
+                const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+                const originalText = verifyBtn.innerHTML;
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                
+                console.log('Sending OTP login request...');
+                
+                // Direct login with OTP
+                const response = await fetch('/api/auth/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        phone_number: phoneNumber,
+                        otp_code: otpCode
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Response result:', result);
+                
+                if (response.ok) {
+                    // Login successful
+                    console.log('Login successful, storing data...');
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    
+                    showAlert(`Welcome back, ${result.user.username}!`, 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    modal.hide();
+                    
+                    // Clear login forms
+                    resetLoginForm();
+                    resetLoginOTPForm();
+                    
+                    // Update UI to show logged in state
+                    updateAuthUI(result.user);
+                    
+                    // Reload page after short delay to show logged-in state
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    console.log('Login failed:', result);
+                    showAlert(result.message || 'Invalid OTP', 'danger');
+                    document.getElementById('loginOtpVerifyStatus').textContent = result.message || 'Invalid OTP';
+                    document.getElementById('loginOtpVerifyStatus').className = 'form-text text-danger';
+                    
+                    // Reset button for retry
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('OTP login error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+                document.getElementById('loginOtpVerifyStatus').textContent = 'Network error. Please try again.';
+                document.getElementById('loginOtpVerifyStatus').className = 'form-text text-danger';
+                
+                // Reset button for retry
+                const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = originalText;
+            }
+        }
+        
+        // Start countdown for resend OTP (login)
+        function startLoginResendCountdown() {
+            let countdown = 60;
+            const sendBtn = document.getElementById('sendLoginOtpBtn');
+            
+            // Clear any existing countdown
+            if (sendBtn.countdownInterval) {
+                clearInterval(sendBtn.countdownInterval);
+            }
+            
+            sendBtn.countdownInterval = setInterval(() => {
+                if (countdown > 0) {
+                    sendBtn.disabled = true;
+                    sendBtn.innerHTML = `Resend (${countdown}s)`;
+                    countdown--;
+                } else {
+                    clearInterval(sendBtn.countdownInterval);
+                    sendBtn.countdownInterval = null;
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = 'Resend OTP';
+                }
+            }, 1000);
+        }
+        
+        // Common authentication functions
+        function showLoginModal() {
+            const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+            modal.show();
+            
+            // Set up tab change listeners
+            const passwordTab = document.getElementById('password-tab');
+            const otpTab = document.getElementById('otp-tab');
+            const passwordLoginBtn = document.getElementById('passwordLoginBtn');
+            
+            // Show/hide login button based on active tab
+            function updateLoginButton() {
+                const isPasswordTab = document.getElementById('password-login').classList.contains('show');
+                if (passwordLoginBtn) {
+                    passwordLoginBtn.style.display = isPasswordTab ? 'block' : 'none';
+                }
+            }
+            
+            // Initial setup
+            updateLoginButton();
+            
+            // Listen for tab changes
+            passwordTab.addEventListener('shown.bs.tab', updateLoginButton);
+            otpTab.addEventListener('shown.bs.tab', updateLoginButton);
+        }
+        
+        function showLoginModalWithCredentials(username, password) {
+            // Pre-fill login form
+            const loginUsername = document.getElementById('loginUsername');
+            const loginPassword = document.getElementById('loginPassword');
+            
+            if (loginUsername) {
+                loginUsername.value = username;
+            }
+            if (loginPassword) {
+                loginPassword.value = password;
+            }
+            
+            // Show login modal
+            const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+            modal.show();
+            
+            // Focus on login button for easy access
+            setTimeout(() => {
+                const loginBtn = document.querySelector('#loginModal button[onclick="handleLogin()"]');
+                if (loginBtn) {
+                    loginBtn.focus();
+                }
+            }, 500);
+        }
+        
+        function showRegisterModal() {
+            // Reset form state when opening modal
+            resetRegistrationForm();
+            const modal = new bootstrap.Modal(document.getElementById('registerModal'));
+            modal.show();
+        }
+        
+        // Reset login form to clean state
+        function resetLoginForm() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.reset();
+            }
+        }
+        
+        // Reset registration form to clean state
+        function resetRegistrationForm() {
+            // Reset global variables
+            isPhoneVerified = false;
+            
+            // Reset form fields
+            const form = document.getElementById('registerForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Reset submit button state
+            const submitBtn = document.querySelector('button[onclick="handleRegister()"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+            }
+            
+            // Reset OTP UI state
+            document.getElementById('otpStatus').textContent = 'Enter the OTP sent to your phone';
+            document.getElementById('otpStatus').className = 'form-text';
+            document.getElementById('otp_code').disabled = false;
+            document.getElementById('sendOtpBtn').disabled = false;
+            document.getElementById('verifyOtpBtn').disabled = false;
+            document.getElementById('sendOtpBtn').innerHTML = 'Send OTP';
+            document.getElementById('verifyOtpBtn').innerHTML = 'Verify';
+            
+            // Clear any countdown timers
+            const sendBtn = document.getElementById('sendOtpBtn');
+            if (sendBtn.countdownInterval) {
+                clearInterval(sendBtn.countdownInterval);
+                sendBtn.countdownInterval = null;
+            }
+        }
+        
+        // Handle registration
+        async function handleRegister() {
+            const form = document.getElementById('registerForm');
+            const formData = new FormData(form);
+            
+            // Get form data
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                confirm_password: formData.get('confirm_password'),
+                first_name: formData.get('first_name') || '',
+                last_name: formData.get('last_name') || '',
+                phone_number: formData.get('phone_number') || '',
+                role: formData.get('role')
+            };
+            
+            // Validation
+            if (!data.username || !data.email || !data.password || !data.confirm_password || !data.role) {
+                showAlert('Please fill in all required fields', 'danger');
+                return;
+            }
+            
+            if (!data.phone_number) {
+                showAlert('Phone number is required', 'danger');
+                return;
+            }
+            
+            if (!isPhoneVerified) {
+                showAlert('Please verify your phone number first', 'danger');
+                return;
+            }
+            
+            if (data.password !== data.confirm_password) {
+                showAlert('Passwords do not match', 'danger');
+                return;
+            }
+            
+            if (data.password.length < 8) {
+                showAlert('Password must be at least 8 characters long', 'danger');
+                return;
+            }
+            
+            if (!document.getElementById('terms').checked) {
+                showAlert('Please agree to the Terms of Service and Privacy Policy', 'danger');
+                return;
+            }
+            
+            // Get submit button for state management
+            const submitBtn = event.target;
+            const originalText = submitBtn.innerHTML;
+            const originalDisabled = submitBtn.disabled;
+            
+            try {
+                // Disable button during submission
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+                
+                const response = await fetch('/api/auth/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Registration successful! You can now login with your credentials.', 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+                    modal.hide();
+                    // Form will be reset by the modal hidden event listener
+                    
+                    // Pre-fill login form with registered user's credentials
+                    setTimeout(() => {
+                        showLoginModalWithCredentials(data.username, data.password);
+                    }, 1500);
+                } else {
+                    // Handle validation errors
+                    let errorMessage = 'Registration failed. Please check your input.';
+                    if (result.non_field_errors) {
+                        errorMessage = result.non_field_errors.join(', ');
+                    } else if (result.username) {
+                        errorMessage = `Username: ${result.username.join(', ')}`;
+                    } else if (result.email) {
+                        errorMessage = `Email: ${result.email.join(', ')}`;
+                    } else if (result.password) {
+                        errorMessage = `Password: ${result.password.join(', ')}`;
+                    }
+                    showAlert(errorMessage, 'danger');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+            } finally {
+                // Always re-enable button, even if there was an error
+                try {
+                    submitBtn.disabled = originalDisabled;
+                    submitBtn.innerHTML = originalText;
+                } catch (e) {
+                    console.error('Error resetting button:', e);
+                    // Fallback: try to reset button by selector
+                    const fallbackBtn = document.querySelector('button[onclick="handleRegister()"]');
+                    if (fallbackBtn) {
+                        fallbackBtn.disabled = false;
+                        fallbackBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+                    }
+                }
+            }
+        }
+        
+        // Handle login
+        async function handleLogin() {
+            // Only handle password-based login now (OTP login is handled by verifyLoginOTP)
+            const form = document.getElementById('loginForm');
+            const formData = new FormData(form);
+            
+            const data = {
+                username: formData.get('loginUsername'),
+                password: formData.get('loginPassword')
+            };
+            
+            // Validation
+            if (!data.username || !data.password) {
+                showAlert('Please enter username and password', 'danger');
+                return;
+            }
+            
+            try {
+                // Disable button during submission
+                const submitBtn = event.target;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+                
+                const response = await fetch('/api/auth/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Store auth token
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    
+                    showAlert(`Welcome back, ${result.user.username}!`, 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    modal.hide();
+                    
+                    // Clear login forms
+                    resetLoginForm();
+                    resetLoginOTPForm();
+                    
+                    // Update UI to show logged in state
+                    updateAuthUI(result.user);
+                    
+                    // Reload page after short delay to show logged-in state
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert(result.message || 'Login failed', 'danger');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
+            }
+        }
+        
+        // Reset login OTP form
+        function resetLoginOTPForm() {
+            // Reset form fields
+            document.getElementById('loginPhoneNumber').value = '';
+            document.getElementById('loginOtpCode').value = '';
+            
+            // Reset UI state
+            document.getElementById('loginOtpStatus').textContent = 'We\'ll send a verification code to this number';
+            document.getElementById('loginOtpStatus').className = 'form-text';
+            document.getElementById('loginOtpVerifyStatus').textContent = 'Enter the OTP sent to your phone';
+            document.getElementById('loginOtpVerifyStatus').className = 'form-text';
+            
+            // Reset buttons
+            document.getElementById('loginOtpCode').disabled = false;
+            document.getElementById('sendLoginOtpBtn').disabled = false;
+            document.getElementById('verifyLoginOtpBtn').disabled = false;
+            document.getElementById('sendLoginOtpBtn').innerHTML = 'Send OTP';
+            document.getElementById('verifyLoginOtpBtn').innerHTML = 'Login with OTP';
+            
+            // Clear countdown timers
+            const sendBtn = document.getElementById('sendLoginOtpBtn');
+            if (sendBtn.countdownInterval) {
+                clearInterval(sendBtn.countdownInterval);
+                sendBtn.countdownInterval = null;
+            }
+        }
+        
+        // Show alert message
+        function showAlert(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.auth-alert');
+            existingAlerts.forEach(alert => alert.remove());
+            
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show auth-alert`;
+            alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+        
+        // Logout function
+        function logout() {
+            console.log('Logout called');
+            
+            // Clear client-side authentication data
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('isLoggingOut');
+            
+            // Redirect to server-side logout endpoint
+            window.location.href = '/logout/';
+            
+            // Prevent any further execution
+            return false;
+        }
+        
+        // Cart counter functions
+        function updateCartCounter() {
+            const cartData = localStorage.getItem('homechef_cart');
+            let itemCount = 0;
+            
+            if (cartData) {
+                try {
+                    const cart = JSON.parse(cartData);
+                    itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
+                } catch (e) {
+                    console.error('Error parsing cart data:', e);
+                }
+            }
+            
+            const cartCounter = document.querySelector('.cart-counter');
+            if (cartCounter) {
+                if (itemCount > 0) {
+                    cartCounter.textContent = itemCount > 99 ? '99+' : itemCount;
+                    cartCounter.style.display = 'inline-block';
+                } else {
+                    cartCounter.style.display = 'none';
+                }
+            }
+        }
+        
+        // Update cart counter on page load and when storage changes
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCounter();
+            
+            // Listen for storage changes (for updates from other tabs)
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'homechef_cart') {
+                    updateCartCounter();
+                }
+            });
+        });
+        
+        // Update auth UI based on login state
+        function updateAuthUI(user) {
+            console.log('updateAuthUI called with user:', user);
+            
+            // Try multiple selectors to find login/register buttons
+            const loginBtn = document.querySelector('[onclick="showLoginModal()"]') ||
+                            document.querySelector('a[href*="login"]') ||
+                            document.querySelector('.login-btn');
+            
+            const registerBtn = document.querySelector('[onclick="showRegisterModal()"]') ||
+                              document.querySelector('a[href*="register"]') ||
+                              document.querySelector('.register-btn');
+            
+            console.log('Login button found:', !!loginBtn);
+            console.log('Register button found:', !!registerBtn);
+            
+            if (user && loginBtn) {
+                console.log('Updating login button for user:', user.username);
+                
+                // Create dropdown menu for logged-in user
+                // Update the parent li element to be a dropdown
+                const parentLi = loginBtn.closest('li');
+                if (parentLi) {
+                    parentLi.className = 'nav-item dropdown';
+                    parentLi.innerHTML = `
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user me-2"></i>${user.username}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/my-orders/">
+                                <i class="fas fa-receipt me-2"></i>My Orders
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    `;
+                }
+                
+                // Initialize Bootstrap dropdown
+                const dropdownElement = document.getElementById('userDropdown');
+                if (dropdownElement && typeof bootstrap !== 'undefined') {
+                    new bootstrap.Dropdown(dropdownElement);
+                }
+            }
+            
+            if (user && registerBtn) {
+                console.log('Hiding register button');
+                registerBtn.style.display = 'none';
+            }
+            
+            if (!user) {
+                console.log('No user provided, resetting UI');
+                // Reset buttons to original state if needed
+                if (loginBtn) {
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-1"></i>Login';
+                    loginBtn.onclick = showLoginModal;
+                }
+                if (registerBtn) {
+                    registerBtn.style.display = '';
+                }
+            }
+        }
+        
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Base template loaded, checking auth...');
+            
+            // Fix any remaining placeholder.com images
+            const placeholderImages = document.querySelectorAll('img[src*="via.placeholder.com"]');
+            placeholderImages.forEach(img => {
+                const originalSrc = img.src;
+                const seed = Math.random().toString(36).substring(7);
+                img.src = `https://picsum.photos/seed/${seed}/300/200.jpg`;
+                console.log('Fixed placeholder image:', originalSrc, '→', img.src);
+            });
+            
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
+            
+            console.log('Token exists:', !!token);
+            console.log('User exists:', !!userStr);
+            
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    console.log('User logged in:', user.username);
+                    updateAuthUI(user);
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                    // Clear corrupted data
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                }
+            } else {
+                console.log('No auth data found, user not logged in');
+            }
+            
+            // Add event listener to reset form when modal is hidden
+            const registerModal = document.getElementById('registerModal');
+            if (registerModal) {
+                registerModal.addEventListener('hidden.bs.modal', function () {
+                    resetRegistrationForm();
+                });
+            }
+            
+            // Add event listener to reset login form when modal is hidden
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.addEventListener('hidden.bs.modal', function () {
+                    resetLoginForm();
+                });
+            }
+        });
+        
+        // Common API base
+        const API_BASE = '/api/mvp';
+    </script>
+</body>
+</html>

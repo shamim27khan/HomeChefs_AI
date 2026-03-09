@@ -1,0 +1,452 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Chef Profile - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <img src="https://picsum.photos/seed/chef/80/80.jpg" 
+                             alt="Chef" class="chef-avatar me-3" style="width: 80px; height: 80px;">
+                        <div>
+                            <h3 id="chefName">Chef Profile</h3>
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                <span id="chefArea">Loading...</span>
+                            </p>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="star-rating-display me-2" id="chefRatingDisplay">
+                                    <!-- Stars will be populated by JavaScript -->
+                                </div>
+                                <span class="text-muted" id="chefRatingText">0.0 (0 reviews)</span>
+                            </div>
+                            <div>
+                                <span class="verified-badge">
+                                    <i class="fas fa-check-circle me-1"></i>Verified Chef
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 id="chefRating">4.8</h4>
+                                <small class="text-muted">Average Rating</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 id="chefExperience">5+</h4>
+                                <small class="text-muted">Years Experience</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 id="chefOrders">100+</h4>
+                                <small class="text-muted">Orders Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>About</h5>
+                        <p class="text-muted" id="chefBio">Passionate home chef cooking authentic meals with love and care.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Specialties</h5>
+                        <p id="chefSpecialties">North Indian, South Indian, Chinese</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Kitchen Details</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-home me-2"></i>Home Kitchen</li>
+                            <li><i class="fas fa-certificate me-2"></i>FSSAI Certified</li>
+                            <li><i class="fas fa-shield-alt me-2"></i>Hygiene Verified</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Today's Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div id="todayMeals">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <p class="mt-2">Loading today's meals...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Customer Reviews</h5>
+                </div>
+                <div class="card-body">
+                    <div id="customerReviews">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <p class="mt-2">Loading reviews...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const API_BASE = '/api/mvp';
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Chef page loaded, checking auth...');
+    console.log('API_BASE set to:', API_BASE);
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('user');
+    
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!userStr);
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log('User logged in:', user.username);
+            updateAuthUI(user);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    } else {
+        console.log('No auth data found, user not logged in');
+    }
+    
+    console.log('DOM Content Loaded - Chef Page');
+    
+    const chefId = new URLSearchParams(window.location.search).get('chef_id');
+    console.log('Chef ID from URL:', chefId);
+    
+    if (chefId) {
+        console.log('Chef ID found, loading details...');
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            loadChefDetails(chefId);
+            loadTodayMeals(chefId);
+            loadCustomerReviews(chefId);
+        }, 100);
+    } else {
+        console.log('No chef ID provided');
+        // Show message when no chef_id is provided
+        showNoChefSelected();
+    }
+});
+
+function showNoChefSelected() {
+    document.querySelector('.container').innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-user-chef fa-3x text-muted mb-3"></i>
+            <h3>No Chef Selected</h3>
+            <p class="text-muted">Please select a chef from the homepage to view their profile.</p>
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Browse Chefs
+            </a>
+        </div>
+    `;
+}
+
+async function loadChefDetails(chefId) {
+    try {
+        console.log('Loading chef details for ID:', chefId);
+        
+        // Ensure API_BASE is available
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        console.log('Using API_BASE:', apiBase);
+        
+        // Get all chefs and find the one we need
+        const response = await fetch(`${apiBase}/chefs/public/`);
+        const chefs = await response.json();
+        
+        console.log('Found chefs:', chefs.length);
+        
+        const chef = chefs.find(c => c.id == chefId);
+        
+        if (chef) {
+            console.log('Chef data:', chef);
+            
+            // Update all chef details
+            const elements = {
+                chefName: chef.username || 'Chef',
+                chefArea: chef.area || 'Unknown Area',
+                chefRating: chef.average_rating || '0.0',
+                chefExperience: (chef.cooking_experience || 5) + '+',
+                chefSpecialties: chef.cuisine_specialties || 'Various Cuisines'
+            };
+            
+            // Update star rating display
+            updateChefStarRating(chef.average_rating || 0, chef.total_ratings || 0);
+            
+            // Update DOM elements
+            Object.keys(elements).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = elements[elementId];
+                    console.log(`Updated ${elementId}: ${elements[elementId]}`);
+                } else {
+                    console.error(`Element not found: ${elementId}`);
+                }
+            });
+            
+            // Update verification badge
+            const verifiedBadge = document.querySelector('.verified-badge');
+            if (verifiedBadge) {
+                if (chef.is_verified) {
+                    verifiedBadge.style.display = 'inline-block';
+                    console.log('Showing verified badge');
+                } else {
+                    verifiedBadge.style.display = 'none';
+                    console.log('Hiding verified badge');
+                }
+            }
+            
+            // Update chef avatar
+            const chefAvatar = document.querySelector('.chef-avatar');
+            if (chefAvatar) {
+                chefAvatar.src = `https://picsum.photos/seed/${chef.username}/80/80.jpg`;
+                chefAvatar.alt = chef.username;
+            }
+            
+        } else {
+            console.error('Chef not found with ID:', chefId);
+            showChefNotFound();
+        }
+    } catch (error) {
+        console.error('Error loading chef details:', error);
+        showChefError();
+    }
+}
+
+async function loadTodayMeals(chefId) {
+    try {
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        console.log('Loading today\'s meals for chef:', chefId);
+        
+        const response = await fetch(`${apiBase}/chefs/today-meals/`);
+        const meals = await response.json();
+        
+        console.log('All today meals:', meals);
+        console.log('Looking for chef ID:', chefId, 'Type:', typeof chefId);
+        console.log('Meal chef IDs:', meals.map(m => ({id: m.chef, name: m.chef_username, chefInfo: m.chef_info, type: typeof m.chef})));
+        
+        // Debug each meal individually
+        meals.forEach((meal, index) => {
+            console.log(`Meal ${index}:`, {
+                chef: meal.chef,
+                chefUsername: meal.chef_username,
+                chefInfo: meal.chef_info,
+                mainDish: meal.main_dish,
+                chefEqualsId: meal.chef == chefId,
+                chefInfoEqualsId: meal.chef_info && meal.chef_info.id == chefId,
+                chefInfoEqualsIdString: meal.chef_info && meal.chef_info.id == chefId.toString()
+            });
+        });
+        
+        // Fix: Use chef_info.id instead of chef field
+        const chefMeals = meals.filter(meal => meal.chef_info && meal.chef_info.id == chefId);
+        const container = document.getElementById('todayMeals');
+        
+        console.log(`Found ${chefMeals.length} meals for chef ${chefId}`);
+        console.log('Chef meals:', chefMeals);
+        
+        if (chefMeals.length > 0) {
+            container.innerHTML = chefMeals.map(meal => `
+                <div class="mb-3 p-3 border rounded">
+                    <h6>${meal.main_dish}</h6>
+                    <p class="text-muted small mb-1">${meal.side_dish || ''}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="price-tag">₹${meal.price_per_portion}</span>
+                        <button class="btn btn-sm btn-primary" onclick="orderMeal(${meal.id})">
+                            Order Now
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="text-muted">No meals available today</p>';
+        }
+    } catch (error) {
+        console.error('Error loading meals:', error);
+        document.getElementById('todayMeals').innerHTML = '<p class="text-danger">Error loading meals</p>';
+    }
+}
+
+async function loadCustomerReviews(chefId) {
+    try {
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        console.log('Loading customer reviews for chef:', chefId);
+        
+        const response = await fetch(`${apiBase}/orders/chef/${chefId}/ratings/`, {
+            headers: {
+                'Authorization': `Token ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const reviews = await response.json();
+            console.log('Reviews loaded:', reviews);
+            displayCustomerReviews(reviews);
+        } else {
+            // If API fails, show coming soon message
+            const container = document.getElementById('customerReviews');
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-star fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No reviews yet!</p>
+                    <small class="text-muted">Be the first to review this chef.</small>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        const container = document.getElementById('customerReviews');
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-star fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No reviews yet!</p>
+                <small class="text-muted">Be the first to review this chef.</small>
+            </div>
+        `;
+    }
+}
+
+function displayCustomerReviews(reviews) {
+    const container = document.getElementById('customerReviews');
+    
+    if (!reviews || reviews.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-star fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No reviews yet!</p>
+                <small class="text-muted">Be the first to review this chef.</small>
+            </div>
+        `;
+        return;
+    }
+    
+    const reviewsHtml = reviews.map(review => `
+        <div class="review-item border-bottom pb-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <strong>${review.customer_username}</strong>
+                    <div class="star-rating small">
+                        ${generateStarDisplay(review.rating)}
+                    </div>
+                </div>
+                <small class="text-muted">${new Date(review.created_at).toLocaleDateString()}</small>
+            </div>
+            ${review.feedback ? `<p class="mb-0">${review.feedback}</p>` : '<p class="mb-0 text-muted">No feedback provided</p>'}
+        </div>
+    `).join('');
+    
+    container.innerHTML = reviewsHtml;
+}
+
+function generateStarDisplay(rating) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            stars += '<i class="fas fa-star" style="color: #ffc107; font-size: 14px;"></i>';
+        } else {
+            stars += '<i class="far fa-star" style="color: #ffc107; font-size: 14px;"></i>';
+        }
+    }
+    return stars;
+}
+
+function showChefNotFound() {
+    document.querySelector('.container').innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+            <h3>Chef Not Found</h3>
+            <p class="text-muted">The chef you're looking for doesn't exist or has been removed.</p>
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Browse All Chefs
+            </a>
+        </div>
+    `;
+}
+
+function showChefError() {
+    document.querySelector('.container').innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h3>Error Loading Chef</h3>
+            <p class="text-muted">We couldn't load the chef information. Please try again later.</p>
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Go Home
+            </a>
+        </div>
+    `;
+}
+
+function orderMeal(mealId) {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('Please login to order meals. Login feature coming soon!');
+        return;
+    }
+    
+    // For now, show a message
+    alert('Order feature coming soon! For now, please use the API directly.');
+}
+
+function updateChefStarRating(rating, totalRatings) {
+    const starDisplay = document.getElementById('chefRatingDisplay');
+    const ratingText = document.getElementById('chefRatingText');
+    
+    if (!starDisplay || !ratingText) return;
+    
+    // Create star HTML
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHtml = '';
+    
+    // Full stars
+    for (let i = 0; i < fullStars; i++) {
+        starsHtml += '<i class="fas fa-star" style="color: #ffc107; font-size: 16px;"></i>';
+    }
+    
+    // Half star
+    if (hasHalfStar) {
+        starsHtml += '<i class="fas fa-star-half-alt" style="color: #ffc107; font-size: 16px;"></i>';
+    }
+    
+    // Empty stars
+    for (let i = 0; i < emptyStars; i++) {
+        starsHtml += '<i class="far fa-star" style="color: #ffc107; font-size: 16px;"></i>';
+    }
+    
+    starDisplay.innerHTML = starsHtml;
+    ratingText.textContent = `${rating.toFixed(1)} (${totalRatings} ${totalRatings === 1 ? 'review' : 'reviews'})`;
+}
+</script>
+{% endblock %}

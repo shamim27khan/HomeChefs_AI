@@ -1,0 +1,598 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Register - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">
+                            <i class="fas fa-user-plus me-2 text-primary"></i>
+                            Create Your Account
+                        </h2>
+                        <p class="text-muted">Join HomeChefHub and start your culinary journey</p>
+                    </div>
+
+                    <form id="registerPageForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" required>
+                                    </div>
+                                    <div class="form-text">3-30 characters, letters, numbers, and underscores only</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" class="form-control" id="email" name="email" placeholder="your.email@example.com" required>
+                                    </div>
+                                    <div class="form-text">We'll send you a confirmation email</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" placeholder="John">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Doe">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone_number" class="form-label">Phone Number *</label>
+                                    <div class="input-group">
+                                        <input type="tel" class="form-control" id="phone_number" name="phone_number" placeholder="+91 98765 43210" required>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="sendOTP()" id="sendOtpBtn">
+                                            Send OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text">We'll send a verification code to this number</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="otp_code" class="form-label">Verification Code</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="otp_code" name="otp_code" placeholder="Enter 6-digit code" maxlength="6">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="verifyOTP()" id="verifyOtpBtn">
+                                            Verify
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="otpStatus">Enter the OTP sent to your phone</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">I want to *</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="role" id="role_customer" value="customer" required>
+                                        <label class="btn btn-outline-primary" for="role_customer">
+                                            <i class="fas fa-utensils me-2"></i>
+                                            Order Food
+                                            <small class="d-block text-muted">Customer</small>
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="role" id="role_chef" value="chef">
+                                        <label class="btn btn-outline-primary" for="role_chef">
+                                            <i class="fas fa-chef-hat me-2"></i>
+                                            Sell Food
+                                            <small class="d-block text-muted">Chef</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                    </div>
+                                    <div class="form-text">Minimum 8 characters, letters and numbers</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="terms" required>
+                                        <label class="form-check-label" for="terms">
+                                            I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a> *
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Chef Registration:</strong> After registration, you'll need to complete your chef profile and get verified to start selling.
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="handlePageRegister()">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">
+                            Already have an account? 
+                            <a href="#" onclick="showLoginModal(); return false;" class="text-primary">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let isPhoneVerified = false;
+
+// Reset registration form to clean state
+function resetRegistrationForm() {
+    // Reset global variables
+    isPhoneVerified = false;
+    
+    // Reset form fields
+    const form = document.getElementById('registerPageForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Reset submit button state
+    const submitBtn = document.querySelector('button[onclick="handlePageRegister()"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+    }
+    
+    // Reset OTP UI state
+    const otpStatus = document.getElementById('otpStatus');
+    if (otpStatus) {
+        otpStatus.textContent = 'Enter the OTP sent to your phone';
+        otpStatus.className = 'form-text';
+    }
+    
+    const otpCode = document.getElementById('otp_code');
+    if (otpCode) {
+        otpCode.disabled = false;
+    }
+    
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    if (sendOtpBtn) {
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.innerHTML = 'Send OTP';
+    }
+    
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    if (verifyOtpBtn) {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.innerHTML = 'Verify';
+    }
+    
+    // Clear any countdown timers
+    if (sendOtpBtn && sendOtpBtn.countdownInterval) {
+        clearInterval(sendOtpBtn.countdownInterval);
+        sendOtpBtn.countdownInterval = null;
+    }
+}
+
+// Send OTP to phone number
+async function sendOTP() {
+    const phoneNumber = document.getElementById('phone_number').value.trim();
+    
+    if (!phoneNumber) {
+        showAlert('Please enter a phone number', 'danger');
+        return;
+    }
+    
+    // Basic phone number validation
+    if (!phoneNumber.match(/^[\d\s\-\+\(\)]+$/) || phoneNumber.replace(/\D/g, '').length < 10) {
+        showAlert('Please enter a valid phone number', 'danger');
+        return;
+    }
+    
+    try {
+        const sendBtn = document.getElementById('sendOtpBtn');
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        const response = await fetch('/api/auth/request-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phone_number: phoneNumber })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showAlert(`OTP sent successfully! For development, OTP is: ${result.otp_code}`, 'success');
+            const otpStatus = document.getElementById('otpStatus');
+            if (otpStatus) {
+                otpStatus.textContent = 'OTP sent! Check your phone.';
+                otpStatus.className = 'form-text text-success';
+            }
+            
+            // Enable verify button
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+            if (verifyBtn) {
+                verifyBtn.disabled = false;
+            }
+            
+            // Start countdown for resend
+            startResendCountdown();
+        } else {
+            showAlert(result.phone_number ? result.phone_number[0] : 'Failed to send OTP', 'danger');
+        }
+    } catch (error) {
+        console.error('OTP send error:', error);
+        showAlert('Network error. Please try again.', 'danger');
+    } finally {
+        const sendBtn = document.getElementById('sendOtpBtn');
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = 'Send OTP';
+    }
+}
+
+// Verify OTP
+async function verifyOTP() {
+    const phoneNumber = document.getElementById('phone_number').value.trim();
+    const otpCode = document.getElementById('otp_code').value.trim();
+    
+    if (!phoneNumber || !otpCode) {
+        showAlert('Please enter phone number and OTP', 'danger');
+        return;
+    }
+    
+    if (otpCode.length !== 6) {
+        showAlert('OTP must be 6 digits', 'danger');
+        return;
+    }
+    
+    try {
+        const verifyBtn = document.getElementById('verifyOtpBtn');
+        const originalText = verifyBtn.innerHTML;
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        
+        const response = await fetch('/api/auth/verify-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                phone_number: phoneNumber,
+                otp_code: otpCode
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.is_verified) {
+            isPhoneVerified = true;
+            showAlert('Phone number verified successfully!', 'success');
+            const otpStatus = document.getElementById('otpStatus');
+            if (otpStatus) {
+                otpStatus.textContent = '✓ Phone verified';
+                otpStatus.className = 'form-text text-success';
+            }
+            
+            // Disable OTP inputs after successful verification
+            const otpCodeInput = document.getElementById('otp_code');
+            if (otpCodeInput) {
+                otpCodeInput.disabled = true;
+            }
+            
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+            if (verifyBtn) {
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = '✓ Verified';
+            }
+            
+            const sendBtn = document.getElementById('sendOtpBtn');
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '✓ Verified';
+            }
+        } else {
+            showAlert(result.message || 'Invalid OTP', 'danger');
+            const otpStatus = document.getElementById('otpStatus');
+            if (otpStatus) {
+                otpStatus.textContent = result.message || 'Invalid OTP';
+                otpStatus.className = 'form-text text-danger';
+            }
+        }
+    } catch (error) {
+        console.error('OTP verification error:', error);
+        showAlert('Network error. Please try again.', 'danger');
+        const otpStatus = document.getElementById('otpStatus');
+        if (otpStatus) {
+            otpStatus.textContent = 'Network error. Please try again.';
+            otpStatus.className = 'form-text text-danger';
+        }
+    } finally {
+        if (!isPhoneVerified) {
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = originalText;
+        }
+    }
+}
+
+// Start countdown for resend OTP
+function startResendCountdown() {
+    let countdown = 60;
+    const sendBtn = document.getElementById('sendOtpBtn');
+    
+    // Clear any existing countdown
+    if (sendBtn.countdownInterval) {
+        clearInterval(sendBtn.countdownInterval);
+    }
+    
+    sendBtn.countdownInterval = setInterval(() => {
+        if (countdown > 0) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = `Resend (${countdown}s)`;
+            countdown--;
+        } else {
+            clearInterval(sendBtn.countdownInterval);
+            sendBtn.countdownInterval = null;
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Resend OTP';
+        }
+    }, 1000);
+}
+
+// Handle registration on page
+async function handlePageRegister() {
+    const form = document.getElementById('registerPageForm');
+    const formData = new FormData(form);
+    
+    // Get form data
+    const data = {
+        username: formData.get('username'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        confirm_password: formData.get('confirm_password'),
+        first_name: formData.get('first_name') || '',
+        last_name: formData.get('last_name') || '',
+        phone_number: formData.get('phone_number') || '',
+        role: formData.get('role')
+    };
+    
+    // Validation
+    if (!data.username || !data.email || !data.password || !data.confirm_password || !data.role) {
+        showAlert('Please fill in all required fields', 'danger');
+        return;
+    }
+    
+    if (!data.phone_number) {
+        showAlert('Phone number is required', 'danger');
+        return;
+    }
+    
+    if (!isPhoneVerified) {
+        showAlert('Please verify your phone number first', 'danger');
+        return;
+    }
+    
+    if (data.password !== data.confirm_password) {
+        showAlert('Passwords do not match', 'danger');
+        return;
+    }
+    
+    if (data.password.length < 8) {
+        showAlert('Password must be at least 8 characters long', 'danger');
+        return;
+    }
+    
+    if (!document.getElementById('terms').checked) {
+        showAlert('Please agree to the Terms of Service and Privacy Policy', 'danger');
+        return;
+    }
+    
+    // Get submit button for state management
+    const submitBtn = event.target;
+    const originalText = submitBtn.innerHTML;
+    const originalDisabled = submitBtn.disabled;
+    
+    try {
+        // Disable button during submission
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+        
+        const response = await fetch('/api/auth/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showAlert('Registration successful! Logging you in...', 'success');
+            resetRegistrationForm();
+            
+            // Auto-login the user after successful registration
+            setTimeout(async () => {
+                try {
+                    const loginResponse = await fetch('/api/auth/login/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: data.username,
+                            password: data.password
+                        })
+                    });
+                    
+                    const loginResult = await loginResponse.json();
+                    
+                    if (loginResponse.ok) {
+                        // Store auth token
+                        localStorage.setItem('authToken', loginResult.token);
+                        localStorage.setItem('user', JSON.stringify(loginResult.user));
+                        
+                        showAlert(`Welcome to HomeChefs, ${loginResult.user.username}!`, 'success');
+                        
+                        // Redirect to home page
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    } else {
+                        // If auto-login fails, redirect to login page
+                        showAlert('Registration successful! Please login manually.', 'info');
+                        setTimeout(() => {
+                            window.location.href = '/login/';
+                        }, 1500);
+                    }
+                } catch (error) {
+                    console.error('Auto-login error:', error);
+                    showAlert('Registration successful! Please login manually.', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/login/';
+                    }, 1500);
+                }
+            }, 1000);
+        } else {
+            // Handle validation errors
+            let errorMessage = 'Registration failed. Please check your input.';
+            if (result.non_field_errors) {
+                errorMessage = result.non_field_errors.join(', ');
+            } else if (result.username) {
+                errorMessage = `Username: ${result.username.join(', ')}`;
+            } else if (result.email) {
+                errorMessage = `Email: ${result.email.join(', ')}`;
+            } else if (result.password) {
+                errorMessage = `Password: ${result.password.join(', ')}`;
+            }
+            showAlert(errorMessage, 'danger');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        showAlert('Network error. Please try again.', 'danger');
+    } finally {
+        // Always re-enable button, even if there was an error
+        try {
+            submitBtn.disabled = originalDisabled;
+            submitBtn.innerHTML = originalText;
+        } catch (e) {
+            console.error('Error resetting button:', e);
+            // Fallback: try to reset button by ID
+            const fallbackBtn = document.querySelector('button[onclick="handlePageRegister()"]');
+            if (fallbackBtn) {
+                fallbackBtn.disabled = false;
+                fallbackBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
+            }
+        }
+    }
+}
+
+// Show alert message
+function showAlert(message, type) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.auth-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // Create new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show auth-alert`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Register page loaded, checking auth...');
+    
+    // Check if user is already logged in
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('user');
+    
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!userStr);
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log('User already logged in:', user.username);
+            updateAuthUI(user);
+            
+            // Redirect to home if already logged in
+            showAlert('You are already logged in! Redirecting to home...', 'info');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    } else {
+        console.log('No auth data found, user can register');
+    }
+    
+    resetRegistrationForm();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Login - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">
+                            <i class="fas fa-sign-in-alt me-2 text-primary"></i>
+                            Welcome Back
+                        </h2>
+                        <p class="text-muted">Login to your HomeChefHub account</p>
+                    </div>
+
+                    <form id="loginPageForm">
+                        <div class="mb-3">
+                            <label for="loginUsername" class="form-label">Username or Email</label>
+                            <input type="text" class="form-control" id="loginUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="handlePageLogin()">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">
+                            Don't have an account? 
+                            <a href="/register/" class="text-primary">Register here</a>
+                        </p>
+                        <a href="#" class="text-primary small">Forgot password?</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Check authentication status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Login page loaded, checking auth...');
+    
+    // Check if user is already logged in
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('user');
+    
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!userStr);
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log('User already logged in:', user.username);
+            updateAuthUI(user);
+            
+            // Redirect to home if already logged in
+            showAlert('You are already logged in! Redirecting to home...', 'info');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    } else {
+        console.log('No auth data found, user can login');
+    }
+});
+
+// Handle login on page
+async function handlePageLogin() {
+    const form = document.getElementById('loginPageForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        username: formData.get('loginUsername'),
+        password: formData.get('loginPassword')
+    };
+    
+    if (!data.username || !data.password) {
+        showAlert('Please enter username and password', 'danger');
+        return;
+    }
+    
+    try {
+        // Disable button during submission
+        const submitBtn = event.target;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+        
+        const response = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Store auth token
+            localStorage.setItem('authToken', result.token);
+            localStorage.setItem('user', JSON.stringify(result.user));
+            
+            showAlert('Login successful! Redirecting...', 'success');
+            form.reset();
+            
+            // Redirect to home after successful login
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        } else {
+            showAlert(result.non_field_errors ? result.non_field_errors.join(', ') : 'Invalid credentials', 'danger');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showAlert('Network error. Please try again.', 'danger');
+    } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
+    }
+}
+</script>
+{% endblock %}

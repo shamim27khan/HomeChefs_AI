@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, ChefProfile, CustomerProfile
+from .models import User, ChefProfile, CustomerProfile, PhoneOTP
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -13,6 +13,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError("Passwords don't match")
+        
+        # Check if phone number already exists
+        phone_number = attrs.get('phone_number')
+        if phone_number:
+            if User.objects.filter(phone_number=phone_number).exists():
+                raise serializers.ValidationError("This phone number is already registered. Please use a different phone number or login with your existing account.")
+        
         return attrs
     
     def create(self, validated_data):
@@ -28,23 +35,30 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
+    username = serializers.CharField(required=False)
+    password = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=False)
+    otp_code = serializers.CharField(required=False)
     
     def validate(self, attrs):
+        # Check if this is OTP-based login or username/password login
+        phone_number = attrs.get('phone_number')
+        otp_code = attrs.get('otp_code')
         username = attrs.get('username')
         password = attrs.get('password')
         
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if not user:
-                raise serializers.ValidationError('Invalid credentials')
-            if not user.is_active:
-                raise serializers.ValidationError('User account is disabled')
-            attrs['user'] = user
-            return attrs
+        if phone_number and otp_code:
+            # OTP-based login
+            if not phone_number or not otp_code:
+                raise serializers.ValidationError('Phone number and OTP are required for OTP login')
+        elif username and password:
+            # Username/password login
+            if not username or not password:
+                raise serializers.ValidationError('Username and password are required for password login')
         else:
-            raise serializers.ValidationError('Must include username and password')
+            raise serializers.ValidationError('Either provide username/password or phone_number/OTP')
+        
+        return attrs
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,3 +79,21 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerProfile
         fields = ['user', 'preferred_cuisines', 'dietary_restrictions', 'default_delivery_address']
+
+class OTPRequestSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+    
+    def validate_phone_number(self, value):
+        # Basic phone number validation
+        if not value.isdigit() or len(value) < 10:
+            raise serializers.ValidationError("Please enter a valid phone number")
+        return value
+
+class OTPVerifySerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+    otp_code = serializers.CharField(max_length=6, min_length=6)
+    
+    def validate_otp_code(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("OTP must be numeric")
+        return value

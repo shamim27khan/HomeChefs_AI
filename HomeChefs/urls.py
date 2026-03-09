@@ -36,16 +36,33 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('mvp/', views.index_mvp, name='index_mvp'),
+    path('zomato/', views.index_zomato_style, name='index_zomato_style'),
     path('search/', views.search_page, name='search_page'),
     path('chef/', views.chef_detail, name='chef_detail'),
+    path('order-meal/<int:meal_id>/', views.order_meal, name='order_meal'),
+    path('checkout/', views.checkout, name='checkout'),
+    path('my-orders/', views.my_orders, name='my_orders'),
+    path('track-order/<int:order_id>/', views.track_order, name='track_order'),
+    path('order-confirmation/<int:order_id>/', views.order_confirmation, name='order_confirmation'),
     path('cart/', views.cart_page, name='cart_page'),
+    path('register/', views.register_page, name='register_page'),
+    path('login/', views.login_page, name='login_page'),
+    path('logout/', views.logout_view, name='logout'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
     path('api/chefs/', include('chefs.urls')),
     path('api/customers/', include('customers.urls')),
     path('api/orders/', include('orders.urls')),
     path('api/payments/', include('payments.urls')),
+    # MVP URLs
+    path('api/mvp/chefs/', include('chefs.urls_mvp')),
+    path('api/mvp/orders/', include('orders.urls_mvp')),
     path('test/', views.test_page, name='test_page'),
+    # Frontend static files
+    path('frontend/<path:path>', views.serve_frontend_file, name='serve_frontend_file'),
+    # Catch-all for frontend files
+    re_path(r'^.*/index_zomato_style\.html$', views.search_page, name='catch_zomato_html'),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
