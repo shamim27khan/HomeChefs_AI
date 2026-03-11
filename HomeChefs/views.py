@@ -19,6 +19,17 @@ def home(request):
     # Show customer homepage for non-authenticated users or customers
     return render(request, 'HomeChefs/index_mvp.html')
 
+def customer_dashboard(request):
+    """Customer dashboard with order functionality"""
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    
+    if request.user.role != 'customer':
+        return redirect('/')
+    
+    # Get pending order from localStorage (handled in frontend)
+    return render(request, 'HomeChefs/my_orders.html')
+
 def logout_view(request):
     """Proper logout that clears Django session and redirects to home"""
     if request.user.is_authenticated:
@@ -60,24 +71,31 @@ def test_page(request):
     return HttpResponse("Test page not found", status=404)
 
 def search_page(request):
-    """Serve the search page"""
-    # Check if user wants the Zomato-style search
-    if request.GET.get('style') == 'zomato':
-        return index_zomato_style(request)
+    """Serve the search page with chef search functionality"""
+    query = request.GET.get('q', '').strip()
     
-    # Check if someone is trying to access frontend files directly
-    if 'index_zomato_style.html' in request.path:
-        return redirect('/zomato/')
+    if not query:
+        return render(request, 'HomeChefs/search.html')
     
-    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
-    search_file = os.path.join(frontend_path, 'search.html')
+    # Search for chefs by username or business name
+    from authentication.models import User
+    from chefs.models import ChefProfile
     
-    if os.path.exists(search_file):
-        with open(search_file, 'r', encoding='utf-8') as f:
-            return HttpResponse(f.read(), content_type='text/html')
+    chefs = User.objects.filter(
+        role='chef',
+        username__icontains=query
+    ).select_related('chefprofile')
     
-    # Fallback to simple search page
-    return render(request, 'HomeChefs/search.html')
+    # If only one chef found, redirect to chef profile
+    if chefs.count() == 1:
+        chef = chefs.first()
+        return redirect(f'/chef/?chef_id={chef.id}')
+    
+    # If multiple chefs found, show search results
+    return render(request, 'HomeChefs/search.html', {
+        'query': query,
+        'chefs': chefs
+    })
 
 def chef_detail(request):
     """Serve the chef detail page"""

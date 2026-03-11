@@ -85,6 +85,24 @@ class CustomerRatingSerializer(serializers.ModelSerializer):
             'feedback', 'created_at'
         ]
         read_only_fields = ['customer', 'daily_order', 'created_at']
+    
+    def validate_rating(self, value):
+        """Validate rating is between 1 and 5"""
+        if not isinstance(value, int) or value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be an integer between 1 and 5.")
+        return value
+    
+    def validate_feedback(self, value):
+        """Validate feedback length and sanitize"""
+        if value:
+            # Strip whitespace and check length
+            value = value.strip()
+            if len(value) > 200:
+                raise serializers.ValidationError("Feedback cannot exceed 200 characters.")
+            # Basic sanitization - remove any potential HTML tags
+            import re
+            value = re.sub(r'<[^>]+>', '', value)
+        return value
 
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating order status (chefs only)"""
@@ -111,7 +129,7 @@ class CustomerOrderListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_id', 'meal_details', 'meal_type', 'chef_username',
             'chef_area', 'portions', 'total_amount', 'delivery_type',
-            'order_status', 'payment_status', 'order_time',
+            'order_status', 'payment_status', 'order_time', 'created_at',
             'estimated_ready_time', 'pickup_time', 'special_instructions'
         ]
 

@@ -569,7 +569,7 @@ async function searchByQuery(query) {
             console.log('No auth token available, making public request');
         }
         
-        const response = await fetch(`${API_BASE}/chefs/public/?search=${encodeURIComponent(query)}`, {
+        const response = await fetch(`${API_BASE}/chefs/public/`, {
             headers: headers
         });
         
@@ -582,13 +582,20 @@ async function searchByQuery(query) {
         const chefs = await response.json();
         console.log('Found chefs:', chefs.length);
         
+        // Filter chefs by username (client-side filtering)
+        const filteredChefs = chefs.filter(chef => 
+            chef.username && chef.username.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        console.log('Filtered chefs:', filteredChefs.length);
+        
         const resultsContainer = document.getElementById('searchResults');
         
-        if (chefs.length > 0) {
+        if (filteredChefs.length > 0) {
             resultsContainer.innerHTML = `
-                <h4>Found ${chefs.length} chefs for "${query}"</h4>
+                <h4>Found ${filteredChefs.length} chefs for "${query}"</h4>
                 <div class="row g-4">
-                    ${chefs.map(chef => createChefCard(chef)).join('')}
+                    ${filteredChefs.map(chef => createChefCard(chef)).join('')}
                 </div>
             `;
         } else {

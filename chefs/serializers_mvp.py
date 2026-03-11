@@ -101,12 +101,13 @@ class PublicChefSerializer(serializers.ModelSerializer):
     is_verified = serializers.BooleanField(source='chefprofile.is_verified', read_only=True)
     average_rating = serializers.SerializerMethodField()
     total_ratings = serializers.SerializerMethodField()
+    completed_orders = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'username', 'area', 'cuisine_specialties', 'cooking_experience',
-            'is_verified', 'average_rating', 'total_ratings'
+            'is_verified', 'average_rating', 'total_ratings', 'completed_orders'
         ]
     
     def get_average_rating(self, obj):
@@ -122,6 +123,14 @@ class PublicChefSerializer(serializers.ModelSerializer):
         from orders.models import CustomerRating
         return CustomerRating.objects.filter(
             daily_order__daily_meal__chef=obj
+        ).count()
+    
+    def get_completed_orders(self, obj):
+        # Count completed orders for this chef (ready or delivered status)
+        from orders.models import DailyMealOrder
+        return DailyMealOrder.objects.filter(
+            daily_meal__chef=obj,
+            order_status__in=['ready', 'delivered']
         ).count()
 
 class TodayMealsSerializer(serializers.ModelSerializer):

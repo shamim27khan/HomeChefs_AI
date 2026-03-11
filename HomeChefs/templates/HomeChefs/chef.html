@@ -46,7 +46,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="text-center">
-                                <h4 id="chefOrders">100+</h4>
+                                <h4 id="chefOrders">0</h4>
                                 <small class="text-muted">Orders Completed</small>
                             </div>
                         </div>
@@ -116,35 +116,25 @@
 const API_BASE = '/api/mvp';
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Chef page loaded, checking auth...');
-    console.log('API_BASE set to:', API_BASE);
     
     // Check if user is logged in
     const token = localStorage.getItem('authToken');
     const userStr = localStorage.getItem('user');
     
-    console.log('Token exists:', !!token);
-    console.log('User exists:', !!userStr);
-    
     if (token && userStr) {
         try {
             const user = JSON.parse(userStr);
-            console.log('User logged in:', user.username);
             updateAuthUI(user);
         } catch (e) {
             console.error('Error parsing user data:', e);
         }
     } else {
-        console.log('No auth data found, user not logged in');
+        // No auth data found, user not logged in
     }
     
-    console.log('DOM Content Loaded - Chef Page');
-    
     const chefId = new URLSearchParams(window.location.search).get('chef_id');
-    console.log('Chef ID from URL:', chefId);
     
     if (chefId) {
-        console.log('Chef ID found, loading details...');
         // Small delay to ensure DOM is ready
         setTimeout(() => {
             loadChefDetails(chefId);
@@ -152,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadCustomerReviews(chefId);
         }, 100);
     } else {
-        console.log('No chef ID provided');
+        // No chef ID provided
         // Show message when no chef_id is provided
         showNoChefSelected();
     }
@@ -173,22 +163,16 @@ function showNoChefSelected() {
 
 async function loadChefDetails(chefId) {
     try {
-        console.log('Loading chef details for ID:', chefId);
-        
         // Ensure API_BASE is available
         const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
-        console.log('Using API_BASE:', apiBase);
         
         // Get all chefs and find the one we need
         const response = await fetch(`${apiBase}/chefs/public/`);
         const chefs = await response.json();
         
-        console.log('Found chefs:', chefs.length);
-        
         const chef = chefs.find(c => c.id == chefId);
         
         if (chef) {
-            console.log('Chef data:', chef);
             
             // Update all chef details
             const elements = {
@@ -196,7 +180,8 @@ async function loadChefDetails(chefId) {
                 chefArea: chef.area || 'Unknown Area',
                 chefRating: chef.average_rating || '0.0',
                 chefExperience: (chef.cooking_experience || 5) + '+',
-                chefSpecialties: chef.cuisine_specialties || 'Various Cuisines'
+                chefSpecialties: chef.cuisine_specialties || 'Various Cuisines',
+                chefOrders: chef.completed_orders || 0
             };
             
             // Update star rating display
@@ -245,34 +230,13 @@ async function loadChefDetails(chefId) {
 async function loadTodayMeals(chefId) {
     try {
         const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
-        console.log('Loading today\'s meals for chef:', chefId);
-        
+
         const response = await fetch(`${apiBase}/chefs/today-meals/`);
         const meals = await response.json();
         
-        console.log('All today meals:', meals);
-        console.log('Looking for chef ID:', chefId, 'Type:', typeof chefId);
-        console.log('Meal chef IDs:', meals.map(m => ({id: m.chef, name: m.chef_username, chefInfo: m.chef_info, type: typeof m.chef})));
-        
-        // Debug each meal individually
-        meals.forEach((meal, index) => {
-            console.log(`Meal ${index}:`, {
-                chef: meal.chef,
-                chefUsername: meal.chef_username,
-                chefInfo: meal.chef_info,
-                mainDish: meal.main_dish,
-                chefEqualsId: meal.chef == chefId,
-                chefInfoEqualsId: meal.chef_info && meal.chef_info.id == chefId,
-                chefInfoEqualsIdString: meal.chef_info && meal.chef_info.id == chefId.toString()
-            });
-        });
-        
-        // Fix: Use chef_info.id instead of chef field
+        // Filter meals for the specific chef using chef_info.id
         const chefMeals = meals.filter(meal => meal.chef_info && meal.chef_info.id == chefId);
         const container = document.getElementById('todayMeals');
-        
-        console.log(`Found ${chefMeals.length} meals for chef ${chefId}`);
-        console.log('Chef meals:', chefMeals);
         
         if (chefMeals.length > 0) {
             container.innerHTML = chefMeals.map(meal => `
@@ -299,8 +263,7 @@ async function loadTodayMeals(chefId) {
 async function loadCustomerReviews(chefId) {
     try {
         const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
-        console.log('Loading customer reviews for chef:', chefId);
-        
+
         const response = await fetch(`${apiBase}/orders/chef/${chefId}/ratings/`, {
             headers: {
                 'Authorization': `Token ${localStorage.getItem('authToken')}`
@@ -309,29 +272,13 @@ async function loadCustomerReviews(chefId) {
         
         if (response.ok) {
             const reviews = await response.json();
-            console.log('Reviews loaded:', reviews);
             displayCustomerReviews(reviews);
         } else {
-            // If API fails, show coming soon message
-            const container = document.getElementById('customerReviews');
-            container.innerHTML = `
-                <div class="text-center py-3">
-                    <i class="fas fa-star fa-2x text-muted mb-2"></i>
-                    <p class="text-muted">No reviews yet!</p>
-                    <small class="text-muted">Be the first to review this chef.</small>
-                </div>
-            `;
+            displayCustomerReviews([]);
         }
     } catch (error) {
-        console.error('Error loading reviews:', error);
-        const container = document.getElementById('customerReviews');
-        container.innerHTML = `
-            <div class="text-center py-3">
-                <i class="fas fa-star fa-2x text-muted mb-2"></i>
-                <p class="text-muted">No reviews yet!</p>
-                <small class="text-muted">Be the first to review this chef.</small>
-            </div>
-        `;
+        console.error('Error loading customer reviews:', error);
+        displayCustomerReviews([]);
     }
 }
 
@@ -406,15 +353,148 @@ function showChefError() {
 }
 
 function orderMeal(mealId) {
-    // Check if user is logged in
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        alert('Please login to order meals. Login feature coming soon!');
+    // Prevent multiple simultaneous calls
+    if (window.orderingInProgress) {
         return;
     }
     
-    // For now, show a message
-    alert('Order feature coming soon! For now, please use the API directly.');
+    window.orderingInProgress = true;
+    
+    try {
+        // Check if user is logged in
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            // Show login modal instead of alert
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+            return;
+        }
+        
+        // Get meal details from today's meals data - optimized
+        const mealElement = document.querySelector(`[data-meal-id="${mealId}"]`);
+        if (!mealElement) {
+            showToast('Meal details not found', 'warning');
+            return;
+        }
+        
+        // Cache DOM queries for better performance
+        const nameElement = mealElement.querySelector('h6');
+        const priceElement = mealElement.querySelector('.price-tag');
+        const textElement = mealElement.querySelector('.text-muted');
+        
+        // Validate elements exist
+        if (!nameElement || !priceElement || !textElement) {
+            showToast('Meal information incomplete', 'warning');
+            return;
+        }
+        
+        const meal = {
+            id: mealId,
+            name: nameElement.textContent.trim() || 'Unknown Meal',
+            price: priceElement.textContent.replace('₹', '') || '0',
+            type: textElement.textContent || 'Unknown',
+            availablePortions: parseInt(textElement.textContent.match(/\d+/)?.[0] || 0)
+        };
+        
+        // Add to cart using the same cart system as main page
+        const cart = JSON.parse(localStorage.getItem('homechef_cart') || '[]');
+        const existingItem = cart.find(item => item.meal_id === mealId);
+        
+        if (existingItem) {
+            showToast('Meal already in cart', 'warning');
+            return;
+        }
+        
+        cart.push({
+            meal_id: mealId,
+            chef_id: mealData.chef_id || 'chef', // Will be set by API
+            chef_username: 'Current Chef', // Will be updated by API
+            main_dish: mealData.main_dish,
+            quantity: 1, // Use 'quantity' field for checkout compatibility
+            price_per_portion: mealData.price_per_portion,
+            delivery_type: 'pickup'
+        });
+        
+        localStorage.setItem('homechef_cart', JSON.stringify(cart));
+        
+        // Update cart count if on customer page
+        if (typeof updateCartCounter === 'function') {
+            updateCartCounter();
+        }
+        
+        // Update cart count for chef profile too
+        if (typeof updateCartCounter === 'function') {
+            updateCartCounter();
+        }
+        
+        // Simple cart count update for chef profile
+        const cartCountElement = document.getElementById('cartCount');
+        if (cartCountElement) {
+            cartCountElement.textContent = cart.length;
+        }
+        
+        // Show success message with redirect option - optimized
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed top-0 end-0 p-3 bg-info text-white rounded';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-shopping-cart me-2"></i>
+                <div>
+                    <strong>Meal Added to Cart!</strong>
+                    <div class="small">View cart to complete your order</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Error in orderMeal:', error);
+        showToast('An error occurred while processing your order', 'danger');
+    } finally {
+        // Reset flag after 1 second
+        setTimeout(() => {
+            window.orderingInProgress = false;
+        }, 1000);
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `position-fixed top-0 end-0 p-3 bg-${type} text-white rounded`;
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle me-2"></i>
+            <div>
+                <div>${message}</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+
+function removeToast() {
+    const toasts = document.querySelectorAll('.position-fixed');
+    toasts.forEach(toast => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    });
 }
 
 function updateChefStarRating(rating, totalRatings) {
@@ -423,30 +503,258 @@ function updateChefStarRating(rating, totalRatings) {
     
     if (!starDisplay || !ratingText) return;
     
-    // Create star HTML
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    // Use requestAnimationFrame for smooth rendering
+    requestAnimationFrame(() => {
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        // Use document fragment for better performance
+        const fragment = document.createDocumentFragment();
+        
+        // Full stars
+        for (let i = 0; i < fullStars; i++) {
+            const star = document.createElement('i');
+            star.className = 'fas fa-star';
+            star.style.cssText = 'color: #ffc107; font-size: 16px;';
+            fragment.appendChild(star);
+        }
+        
+        // Half star
+        if (hasHalfStar) {
+            const halfStar = document.createElement('i');
+            halfStar.className = 'fas fa-star-half-alt';
+            halfStar.style.cssText = 'color: #ffc107; font-size: 16px;';
+            fragment.appendChild(halfStar);
+        }
+        
+        // Empty stars
+        for (let i = 0; i < emptyStars; i++) {
+            const star = document.createElement('i');
+            star.className = 'far fa-star';
+            star.style.cssText = 'color: #ffc107; font-size: 16px;';
+            fragment.appendChild(star);
+        }
+        
+        // Batch DOM update
+        starDisplay.innerHTML = '';
+        starDisplay.appendChild(fragment);
+        ratingText.textContent = `${rating.toFixed(1)} (${totalRatings} ${totalRatings === 1 ? 'review' : 'reviews'})`;
+    });
+}
+
+// Performance optimizations
+(function() {
+    'use strict';
     
-    let starsHtml = '';
-    
-    // Full stars
-    for (let i = 0; i < fullStars; i++) {
-        starsHtml += '<i class="fas fa-star" style="color: #ffc107; font-size: 16px;"></i>';
+    // Debounce function for performance
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
     
-    // Half star
-    if (hasHalfStar) {
-        starsHtml += '<i class="fas fa-star-half-alt" style="color: #ffc107; font-size: 16px;"></i>';
+    // Throttle function for scroll events
+    function throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
     }
     
-    // Empty stars
-    for (let i = 0; i < emptyStars; i++) {
-        starsHtml += '<i class="far fa-star" style="color: #ffc107; font-size: 16px;"></i>';
+    // Prevent multiple event listeners
+    let eventListenersAdded = false;
+    
+    function addEventListeners() {
+        if (eventListenersAdded) return;
+        eventListenersAdded = true;
+        
+        // Optimized event listeners with passive option
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.order-meal-btn')) {
+                e.preventDefault();
+                const mealId = e.target.dataset.mealId;
+                orderMeal(mealId);
+            }
+            
+            // Safe check for location button click
+            if (e.target.matches('button') && e.target.textContent.includes('Location')) {
+                e.preventDefault();
+                // Check if function exists before calling
+                if (typeof getLocationAndSearch === 'function') {
+                    getLocationAndSearch();
+                } else {
+                    console.warn('getLocationAndSearch function not available');
+                }
+            }
+        }, { passive: true });
+        
+        // Debounced scroll handler
+        window.addEventListener('scroll', throttle(function() {
+            // Lazy load images when scrolling
+            const lazyImages = document.querySelectorAll('img[data-src]');
+            if (lazyImages.length > 0) {
+                lazyImages.forEach(img => {
+                    if (img.getBoundingClientRect().top < window.innerHeight + 200) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                    }
+                });
+            }
+        }, 100), { passive: true });
     }
     
-    starDisplay.innerHTML = starsHtml;
-    ratingText.textContent = `${rating.toFixed(1)} (${totalRatings} ${totalRatings === 1 ? 'review' : 'reviews'})`;
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            addEventListeners();
+            
+            // Update authentication UI for this page
+            // Add small delay to ensure base template auth check completes first
+            setTimeout(() => {
+                const token = localStorage.getItem('authToken');
+                const userStr = localStorage.getItem('user');
+                
+                if (token && userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        
+                        // Note: updateAuthUI is defined in base template, but causing issues on chef page
+                        // We'll skip the UI update to avoid errors
+                    } catch (e) {
+                        console.error('Error parsing user data on chef page:', e);
+                    }
+                } else {
+                    // User not logged in
+                }
+            }, 100); // 100ms delay
+        });
+    }
+    
+    // Get user location and search for nearby dishes (same as index page)
+    function getLocationAndSearch() {
+        if (!navigator.geolocation) {
+            updateLocationStatus('Geolocation is not supported by your browser', 'error');
+            return;
+        }
+        
+        updateLocationStatus('Getting your location...', 'loading');
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                currentLatitude = position.coords.latitude;
+                currentLongitude = position.coords.longitude;
+                
+                updateLocationStatus(`Location found! Searching within ${currentRadius} km...`, 'success');
+                searchNearbyDishes();
+            },
+            (error) => {
+                let message = 'Unable to get your location. ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        message += 'Please allow location access.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message += 'Location information is unavailable.';
+                        break;
+                    default:
+                        message += 'Please try again later.';
+            }
+            updateLocationStatus(message, 'error');
+        }
+    );
+}
+
+})(); // End of performance optimization IIFE
+
+// Update location status
+function updateLocationStatus(message, type) {
+    const statusElement = document.getElementById('locationStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `alert alert-${type}`;
+    }
+}
+
+// Search nearby dishes
+function searchNearbyDishes() {
+    const radius = currentRadius || 5; // Default 5km
+    const latitude = currentLatitude;
+    const longitude = currentLongitude;
+    
+    if (!latitude || !longitude) {
+        console.log('Location not available, skipping nearby search');
+        return;
+    }
+    
+    console.log(`Searching within ${radius}km of (${latitude}, ${longitude})`);
+    
+    fetch(`${API_BASE}/dishes/nearby/?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Nearby dishes found:', data);
+            displayNearbyDishes(data.dishes || []);
+        })
+        .catch(error => {
+            console.error('Error searching nearby dishes:', error);
+        });
+}
+
+// Display nearby dishes
+function displayNearbyDishes(dishes) {
+    const container = document.getElementById('nearbyDishesContainer');
+    if (!container) return;
+    
+    if (dishes.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5>No dishes found nearby</h5>
+                    <p>Try adjusting your location or increasing the search radius.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    let dishesHTML = '<div class="row">';
+    dishes.forEach(dish => {
+        dishesHTML += `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6>${dish.main_dish}</h6>
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-user me-1"></i> ${dish.chef_username}
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">₹${dish.price_per_portion}</span>
+                                <span class="badge bg-success ms-2">${dish.available_portions} available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    dishesHTML += '</div>';
+    container.innerHTML = dishesHTML;
 }
 </script>
+
 {% endblock %}

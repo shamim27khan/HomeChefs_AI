@@ -228,7 +228,7 @@ def chef_stats(request):
     )
     print(f"Today's orders query: chef={request.user.username}, date={today}")
     print(f"Found {today_orders.count()} today's orders")
-    
+
     for order in today_orders:
         print(f"  Order: {order.id}, amount: {order.total_amount}, status: {order.order_status}")
     
@@ -344,31 +344,54 @@ def chef_order_summary(request):
 @permission_classes([permissions.IsAuthenticated])
 def rate_order(request, order_id):
     """Rate a completed order"""
+    # Validate user role
     if request.user.role != 'customer':
-        return Response({'error': 'Only customers can rate orders'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({
+            'error': 'Only customers can rate orders',
+            'code': 'PERMISSION_DENIED'
+        }, status=status.HTTP_403_FORBIDDEN)
     
-    order = get_object_or_404(DailyMealOrder, id=order_id, customer=request.user)
+    # Get and validate order
+    try:
+        order = DailyMealOrder.objects.get(id=order_id, customer=request.user)
+    except DailyMealOrder.DoesNotExist:
+        return Response({
+            'error': 'Order not found',
+            'code': 'ORDER_NOT_FOUND'
+        }, status=status.HTTP_404_NOT_FOUND)
     
-    # Only allow rating for completed orders
+    # Validate order status
     if order.order_status not in ['delivered']:
-        return Response(
-            {'error': f'Can only rate delivered orders. Current status: {order.order_status}'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({
+            'error': f'Can only rate delivered orders. Current status: {order.order_status}',
+            'code': 'INVALID_ORDER_STATUS'
+        }, status=status.HTTP_400_BAD_REQUEST)
     
     # Check if already rated
     if hasattr(order, 'rating'):
-        return Response(
-            {'error': 'Order already rated'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({
+            'error': 'Order already rated',
+            'code': 'ALREADY_RATED'
+        }, status=status.HTTP_400_BAD_REQUEST)
     
+    # Validate and save rating
     serializer = CustomerRatingSerializer(data=request.data, context={'request': request})
     if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'error': 'Invalid rating data',
+            'code': 'VALIDATION_ERROR',
+            'details': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
     
-    rating = serializer.save(daily_order=order, customer=request.user)
-    return Response(CustomerRatingSerializer(rating).data, status=status.HTTP_201_CREATED)
+    try:
+        rating = serializer.save(daily_order=order, customer=request.user)
+        return Response(CustomerRatingSerializer(rating).data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({
+            'error': 'Failed to save rating',
+            'code': 'SAVE_ERROR',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

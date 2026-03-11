@@ -120,21 +120,19 @@ async function loadOrderDetails(orderId) {
             <div class="row text-start">
                 <div class="col-md-6">
                     <p><strong>Order ID:</strong> #${order.id}</p>
-                    <p><strong>Status:</strong> <span class="badge bg-warning">Pending</span></p>
-                    <p><strong>Payment:</strong> ${order.payment_method}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-warning">${order.order_status || 'Pending'}</span></p>
+                    <p><strong>Payment:</strong> ${order.payment_status || 'Pending'}</p>
                     <p><strong>Total Amount:</strong> ₹${order.total_amount}</p>
                 </div>
                 <div class="col-md-6">
                     <p><strong>Delivery Address:</strong></p>
-                    <p class="small">${order.delivery_address.full_name}<br>
-                    ${order.delivery_address.address}<br>
-                    ${order.delivery_address.city}, ${order.delivery_address.pincode}</p>
+                    <p class="small">${order.delivery_address || 'Pickup order'}</p>
                 </div>
             </div>
             <div class="mt-3">
                 <p><strong>Items:</strong></p>
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span>${order.meal_details || 'Meal'} × ${order.portions}</span>
+                    <span>${order.meal_details || order.meal_name || 'Meal'} × ${order.portions}</span>
                     <span>₹${order.price_per_portion * order.portions}</span>
                 </div>
             </div>

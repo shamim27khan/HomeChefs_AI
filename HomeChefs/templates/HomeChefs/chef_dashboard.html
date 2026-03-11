@@ -1184,35 +1184,189 @@ function displayAnalytics(data) {
             <strong>Total Orders:</strong> ${data.total_orders || 0}
         </div>
         <div class="mb-3">
-            <strong>Average Order Value:</strong> ₹${data.average_order_value || 0}
+            <strong>Average Order Value:</strong> ₹${data.avg_order_value || 0}
         </div>
         <div class="mb-3">
             <strong>Unique Customers:</strong> ${data.unique_customers || 0}
         </div>
         <div class="mb-3">
-            <strong>Most Popular Meal:</strong> ${data.most_popular_meal || 'N/A'}
+            <strong>Period:</strong> Last ${data.period_days || 30} days
         </div>
     `;
     
     document.getElementById('analyticsMetrics').innerHTML = metricsHtml;
     
-    // Simple chart visualization (you can enhance this with Chart.js)
+    // Simple chart visualization using daily data
     const canvas = document.getElementById('analyticsChart');
     const ctx = canvas.getContext('2d');
-    // Add basic chart rendering here
+    
+    if (data.daily_data && data.daily_data.length > 0) {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Simple bar chart for orders
+        const maxValue = Math.max(...data.daily_data.map(d => d.orders));
+        const barWidth = canvas.width / data.daily_data.length;
+        const chartHeight = canvas.height - 40;
+        
+        ctx.fillStyle = '#007bff';
+        ctx.strokeStyle = '#007bff';
+        ctx.font = '10px Arial';
+        
+        data.daily_data.forEach((day, index) => {
+            const barHeight = (day.orders / maxValue) * chartHeight;
+            const x = index * barWidth;
+            const y = canvas.height - barHeight - 20;
+            
+            // Draw bar
+            ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
+            
+            // Draw value on top of bar (for non-zero values)
+            if (day.orders > 0) {
+                ctx.fillStyle = '#000';
+                ctx.fillText(day.orders.toString(), x + barWidth/2 - 5, y - 5);
+                ctx.fillStyle = '#007bff';
+            }
+        });
+        
+        // Draw axis line
+        ctx.strokeStyle = '#000';
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height - 20);
+        ctx.lineTo(canvas.width, canvas.height - 20);
+        ctx.stroke();
+    }
 }
 
 // Action functions
 function editMeal(mealId) {
     // Load meal data and show edit modal
-    console.log('Edit meal:', mealId);
-    // Implementation would load meal data and populate edit form
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('You must be logged in to perform this action');
+        return;
+    }
+    
+    // Fetch meal data
+    fetch(`/api/mvp/chefs/daily-meals/${mealId}/`, {
+        headers: {
+            'Authorization': `Token ${token}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showEditMealModal(data.meal);
+        } else {
+            alert('Error loading meal data: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error loading meal data:', error);
+        alert('Error: Failed to load meal data. Please try again.');
+    });
+}
+
+function showEditMealModal(meal) {
+    // Populate edit form with meal data
+    document.getElementById('editMealId').value = meal.id;
+    document.getElementById('editMainDish').value = meal.main_dish || '';
+    document.getElementById('editSideDish').value = meal.side_dish || '';
+    document.getElementById('editAdditionalItems').value = meal.additional_items || '';
+    document.getElementById('editExtraPortions').value = meal.extra_portions || 1;
+    document.getElementById('editPricePerPortion').value = meal.price_per_portion || '';
+    document.getElementById('editOrderCutoffTime').value = meal.order_cutoff_time || '20:00:00';
+    document.getElementById('editPickupAvailable').checked = meal.pickup_available || false;
+    document.getElementById('editDeliveryAvailable').checked = meal.delivery_available || false;
+    document.getElementById('editDeliveryRadius').value = meal.delivery_radius || 3;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editMealModal'));
+    modal.show();
+}
+
+function saveMealChanges() {
+    const mealId = document.getElementById('editMealId').value;
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+        alert('You must be logged in to perform this action');
+        return;
+    }
+    
+    // Collect form data
+    const mealData = {
+        main_dish: document.getElementById('editMainDish').value,
+        side_dish: document.getElementById('editSideDish').value,
+        additional_items: document.getElementById('editAdditionalItems').value,
+        extra_portions: parseInt(document.getElementById('editExtraPortions').value),
+        price_per_portion: parseFloat(document.getElementById('editPricePerPortion').value),
+        order_cutoff_time: document.getElementById('editOrderCutoffTime').value,
+        pickup_available: document.getElementById('editPickupAvailable').checked,
+        delivery_available: document.getElementById('editDeliveryAvailable').checked,
+        delivery_radius: parseInt(document.getElementById('editDeliveryRadius').value)
+    };
+    
+    // Send update request
+    fetch(`/api/mvp/chefs/daily-meals/${mealId}/update/`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mealData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Meal updated successfully!');
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('editMealModal')).hide();
+            // Reload meals list
+            loadMyMeals();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update meal'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating meal:', error);
+        alert('Error: Failed to update meal. Please try again.');
+    });
 }
 
 function toggleMealStatus(mealId) {
     // Toggle meal active/inactive status
-    console.log('Toggle meal status:', mealId);
-    // Implementation would call API to toggle status
+    if (!confirm('Are you sure you want to toggle this meal status?')) {
+        return;
+    }
+    
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        alert('You must be logged in to perform this action');
+        return;
+    }
+    
+    fetch(`/api/mvp/chefs/daily-meals/${mealId}/toggle-status/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Reload the meals list to show updated status
+            loadMyMeals();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to toggle meal status'));
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling meal status:', error);
+        alert('Error: Failed to toggle meal status. Please try again.');
+    });
 }
 
 function viewOrderDetails(orderId) {
@@ -1222,111 +1376,92 @@ function viewOrderDetails(orderId) {
 }
 
 function confirmOrder(orderId) {
-    // Confirm pending order
-    console.log('Confirm order:', orderId);
+    if (!confirm('Are you sure you want to confirm this order?')) {
+        return;
+    }
     
-    if (confirm('Are you sure you want to confirm this order?')) {
-        const token = localStorage.getItem('authToken');
-        
-        fetch(`/api/mvp/orders/${orderId}/confirm/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${token}`
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (response.ok) {
-                alert('Order confirmed successfully!');
-                // Refresh the orders list
-                loadAllOrders();
-            } else {
-                alert('Error: ' + (data.error || 'Failed to confirm order'));
-            }
+    updateOrderStatus(orderId, 'confirmed', '/api/mvp/orders/' + orderId + '/confirm/', 'POST')
+        .then(() => {
+            loadAllOrders();
+            loadOrderDetails(orderId);
         })
         .catch(error => {
             console.error('Error confirming order:', error);
-            alert('Error: Failed to confirm order. Please try again.');
         });
-    }
-}
-
-function markAsDelivered(orderId) {
-    // Mark ready order as delivered
-    console.log('Mark as delivered:', orderId);
-    
-    if (confirm('Are you sure you want to mark this order as delivered?')) {
-        const token = localStorage.getItem('authToken');
-        
-        fetch(`/api/mvp/orders/${orderId}/deliver/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${token}`
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (response.ok) {
-                alert('Order marked as delivered successfully!');
-                // Refresh the orders list
-                loadAllOrders();
-            } else {
-                alert('Error: ' + (data.error || 'Failed to mark order as delivered'));
-            }
-        })
-        .catch(error => {
-            console.error('Error marking as delivered:', error);
-            alert('Error: Failed to mark order as delivered. Please try again.');
-        });
-    }
 }
 
 function startPreparing(orderId) {
-    // Start preparing confirmed order
-    console.log('Start preparing:', orderId);
-    
-    if (confirm('Start preparing this order?')) {
-        updateOrderStatus(orderId, 'preparing', 'Order preparation started!');
+    if (!confirm('Start preparing this order?')) {
+        return;
     }
+    
+    updateOrderStatus(orderId, 'preparing', '/api/mvp/orders/' + orderId + '/status/', 'PUT')
+        .then(() => {
+            loadAllOrders();
+            loadOrderDetails(orderId);
+        })
+        .catch(error => {
+            console.error('Error starting preparation:', error);
+        });
 }
 
 function markReady(orderId) {
-    // Mark preparing order as ready
-    console.log('Mark ready:', orderId);
-    
-    if (confirm('Mark this order as ready for delivery/pickup?')) {
-        updateOrderStatus(orderId, 'ready', 'Order marked as ready!');
+    if (!confirm('Mark this order as ready for delivery/pickup?')) {
+        return;
     }
+    
+    updateOrderStatus(orderId, 'ready', '/api/mvp/orders/' + orderId + '/status/', 'PUT')
+        .then(() => {
+            loadAllOrders();
+            loadOrderDetails(orderId);
+        })
+        .catch(error => {
+            console.error('Error marking as ready:', error);
+        });
 }
 
-function updateOrderStatus(orderId, newStatus, successMessage) {
+function markAsDelivered(orderId) {
+    if (!confirm('Are you sure you want to mark this order as delivered?')) {
+        return;
+    }
+    
+    updateOrderStatus(orderId, 'delivered', '/api/mvp/orders/' + orderId + '/deliver/', 'POST')
+        .then(() => {
+            loadAllOrders();
+            loadOrderDetails(orderId);
+        })
+        .catch(error => {
+            console.error('Error marking as delivered:', error);
+        });
+}
+
+async function updateOrderStatus(orderId, newStatus, endpoint, method) {
     const token = localStorage.getItem('authToken');
     
-    fetch(`/api/mvp/orders/${orderId}/status/`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`
-        },
-        body: JSON.stringify({
-            order_status: newStatus
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (response.ok) {
-            alert(successMessage);
-            loadAllOrders(); // Refresh orders list
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update order status'));
+    try {
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            },
+            body: method === 'POST' ? '{}' : JSON.stringify({ order_status: newStatus })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
-    })
-    .catch(error => {
-        console.error('Error updating order status:', error);
-        alert('Error: Failed to update order status. Please try again.');
-    });
+        
+        const data = await response.json();
+        const message = data.message || `Order ${newStatus} successfully!`;
+        alert(message);
+        
+    } catch (error) {
+        console.error(`Error updating order to ${newStatus}:`, error);
+        alert(`Error: ${error.message}`);
+        throw error;
+    }
 }
 
 function loadOrderDetails(orderId) {
@@ -1455,4 +1590,80 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
 });
 </script>
+
+<!-- Edit Meal Modal -->
+<div class="modal fade" id="editMealModal" tabindex="-1" aria-labelledby="editMealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMealModalLabel">Edit Meal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMealForm">
+                    <input type="hidden" id="editMealId" name="meal_id">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editMainDish" class="form-label">Main Dish *</label>
+                            <input type="text" class="form-control" id="editMainDish" name="main_dish" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editSideDish" class="form-label">Side Dish</label>
+                            <input type="text" class="form-control" id="editSideDish" name="side_dish">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editAdditionalItems" class="form-label">Additional Items</label>
+                        <textarea class="form-control" id="editAdditionalItems" name="additional_items" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editExtraPortions" class="form-label">Extra Portions *</label>
+                            <input type="number" class="form-control" id="editExtraPortions" name="extra_portions" min="1" max="5" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editPricePerPortion" class="form-label">Price per Portion (₹) *</label>
+                            <input type="number" class="form-control" id="editPricePerPortion" name="price_per_portion" min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editOrderCutoffTime" class="form-label">Order Cutoff Time *</label>
+                            <input type="time" class="form-control" id="editOrderCutoffTime" name="order_cutoff_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editPickupAvailable" name="pickup_available">
+                                <label class="form-check-label" for="editPickupAvailable">
+                                    Pickup Available
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editDeliveryAvailable" name="delivery_available">
+                                <label class="form-check-label" for="editDeliveryAvailable">
+                                    Delivery Available
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editDeliveryRadius" class="form-label">Delivery Radius (km)</label>
+                            <input type="number" class="form-control" id="editDeliveryRadius" name="delivery_radius" min="1" max="10" value="3">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveMealChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

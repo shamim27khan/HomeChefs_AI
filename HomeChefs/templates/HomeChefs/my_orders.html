@@ -235,6 +235,21 @@ function createOrderCard(order) {
     
     const statusColor = statusColors[order.order_status] || 'secondary';
     
+    // Helper function to format date safely
+    function formatDate(dateString) {
+        if (!dateString) return 'Date not available';
+        
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return 'Invalid date';
+            }
+            return date.toLocaleString();
+        } catch (e) {
+            return 'Invalid date';
+        }
+    }
+    
     return `
         <div class="card mb-3">
             <div class="card-body">
@@ -243,7 +258,7 @@ function createOrderCard(order) {
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <h6 class="mb-1">Order #${order.order_id}</h6>
-                                <small class="text-muted">${new Date(order.created_at).toLocaleString()}</small>
+                                <small class="text-muted">${formatDate(order.created_at)}</small>
                             </div>
                             <span class="badge bg-${statusColor}">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span>
                         </div>
@@ -319,14 +334,30 @@ async function viewOrderDetails(orderId) {
         const order = await response.json();
         
         const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        
+        // Helper function to format date safely
+        function formatDate(dateString) {
+            if (!dateString) return 'Date not available';
+            
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return 'Invalid date';
+                }
+                return date.toLocaleString();
+            } catch (e) {
+                return 'Invalid date';
+            }
+        }
+        
         document.getElementById('orderDetailsContent').innerHTML = `
             <div class="row">
                 <div class="col-md-6">
                     <h6>Order Information</h6>
                     <p><strong>Order ID:</strong> #${order.order_id}</p>
                     <p><strong>Status:</strong> <span class="badge bg-warning">${order.order_status}</span></p>
-                    <p><strong>Placed on:</strong> ${new Date(order.created_at).toLocaleString()}</p>
-                    <p><strong>Payment:</strong> ${order.payment_method || 'Pending'}</p>
+                    <p><strong>Placed on:</strong> ${formatDate(order.created_at)}</p>
+                    <p><strong>Payment:</strong> ${order.payment_status || 'Pending'}</p>
                     <p><strong>Total Amount:</strong> ₹${order.total_amount}</p>
                 </div>
                 <div class="col-md-6">

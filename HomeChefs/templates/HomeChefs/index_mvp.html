@@ -560,19 +560,19 @@ if (window.location.pathname === '/') {
             
             const container = document.getElementById('chefsContainer');
             container.innerHTML = '';
-            
+
             chefs.slice(0, 6).forEach(chef => {
                 const chefCard = createChefCard(chef);
                 container.innerHTML += chefCard;
             });
-            
+
             document.getElementById('chefsLoading').style.display = 'none';
         } catch (error) {
             console.error('Error loading chefs:', error);
             document.getElementById('chefsLoading').style.display = 'none';
         }
     }
-    
+
     // Update radius display
     function updateRadius(value) {
         currentRadius = value;
@@ -779,7 +779,7 @@ if (window.location.pathname === '/') {
                                 <small class="text-muted">${dish.side_dish || ''}</small>
                             </div>
                             <div class="d-flex flex-column align-items-end">
-                                <span class="distance-badge mb-1">${dish.distance_km} km</span>
+                                <span class="distance-badge mb-1">${dish.distance !== null ? dish.distance + ' km' : 'Distance unknown'}</span>
                                 <span class="${statusClass}">
                                     ${statusMessage}
                                 </span>

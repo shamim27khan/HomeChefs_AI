@@ -34,6 +34,7 @@ class DailyMeal(models.Model):
     
     # Order management
     order_cutoff_time = models.TimeField(
+        default='20:00:00',  # Default to 8 PM
         help_text="Last time to order this meal"
     )
     max_orders = models.PositiveIntegerField(default=5)
@@ -67,8 +68,9 @@ class DailyMeal(models.Model):
     @property
     def is_orderable(self):
         from django.utils import timezone
-        from datetime import datetime
-        now = timezone.now().time()
+        from datetime import datetime, time as time_class
+        
+        now = timezone.now()
         
         # Convert order_cutoff_time from string to time if needed
         if isinstance(self.order_cutoff_time, str):
@@ -80,11 +82,29 @@ class DailyMeal(models.Model):
         else:
             cutoff_time = self.order_cutoff_time
         
-        return (
-            self.is_active and 
-            self.available_portions > 0 and 
-            now <= cutoff_time
-        )
+        # Create cutoff datetime for today's date
+        if self.date == timezone.now().date():
+            # For today's meals, use cutoff time with today's date
+            cutoff_datetime = timezone.now().replace(
+                hour=cutoff_time.hour,
+                minute=cutoff_time.minute,
+                second=cutoff_time.second,
+                microsecond=0
+            )
+            return (
+                self.is_active and 
+                self.available_portions > 0 and 
+                now <= cutoff_datetime
+            )
+        elif self.date > timezone.now().date():
+            # For future meals, always orderable
+            return (
+                self.is_active and 
+                self.available_portions > 0
+            )
+        else:
+            # For past meals, not orderable
+            return False
 
 class ChefProfile(models.Model):
     """Simple chef profile for MVP"""

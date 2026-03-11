@@ -6,7 +6,9 @@ app_name = 'chefs_mvp'
 urlpatterns = [
     # Chef MVP URLs
     path('daily-meals/', views_mvp.chef_daily_meals, name='chef_daily_meals'),
-    path('daily-meals/<int:meal_id>/', views_mvp.chef_daily_meal_detail, name='chef_daily_meal_detail'),
+    path('daily-meals/<int:meal_id>/', views_mvp.get_meal_detail, name='chef_daily_meal_detail'),
+    path('daily-meals/<int:meal_id>/toggle-status/', views_mvp.toggle_meal_status, name='toggle_meal_status'),
+    path('daily-meals/<int:meal_id>/update/', views_mvp.update_meal, name='update_meal'),
     path('my-meals/', views_mvp.my_meals, name='my_meals'),
     path('profile/', views_mvp.chef_profile, name='chef_profile'),
     path('earnings/', views_mvp.chef_earnings, name='chef_earnings'),

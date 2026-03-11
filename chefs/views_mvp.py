@@ -362,17 +362,7 @@ def today_meals(request):
         print(f"Filtered by meal_type: {meal_type}")
     
     print(f"Final meal count: {meals.count()}")
-    
-    # Debug: Add logging
-    for meal in meals:
-        print(f"  Meal: {meal.main_dish} by {meal.chef.username} (ID: {meal.chef.id})")
-        print(f"    - portions: {meal.current_orders}/{meal.extra_portions}")
-        print(f"    - is_active: {meal.is_active}")
-        print(f"    - available_portions: {meal.available_portions}")
-        print(f"    - is_orderable: {meal.is_orderable}")
-    
-    print(f"=== END DEBUG ===")
-    
+
     serializer = TodayMealsSerializer(meals, many=True)
     return Response(serializer.data)
 
@@ -544,6 +534,7 @@ def nearby_dishes(request):
     
     return Response({
         'dishes': nearby_meals,
+        'total_found': len(nearby_meals),
         'search_location': {
             'latitude': user_lat,
             'longitude': user_lon,
@@ -595,3 +586,101 @@ def my_meals(request):
     serializer = TodayMealsSerializer(meals, many=True)
     print(f"Serialized data: {serializer.data}")
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def toggle_meal_status(request, meal_id):
+    """Toggle meal active/inactive status"""
+    try:
+        from .models import DailyMeal
+        
+        meal = DailyMeal.objects.get(id=meal_id, chef=request.user)
+        meal.is_active = not meal.is_active
+        meal.save()
+        
+        return Response({
+            'success': True,
+            'is_active': meal.is_active,
+            'message': f'Meal {"activated" if meal.is_active else "deactivated"} successfully'
+        })
+    except DailyMeal.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Meal not found or you do not have permission to modify it'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_meal_detail(request, meal_id):
+    """Get detailed meal information for editing"""
+    try:
+        from .models import DailyMeal
+        from .serializers_mvp import DailyMealSerializer
+        
+        meal = DailyMeal.objects.get(id=meal_id, chef=request.user)
+        serializer = DailyMealSerializer(meal)
+        
+        return Response({
+            'success': True,
+            'meal': serializer.data
+        })
+    except DailyMeal.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Meal not found or you do not have permission to access it'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def update_meal(request, meal_id):
+    """Update meal details"""
+    try:
+        from .models import DailyMeal
+        from .serializers_mvp import DailyMealSerializer
+        
+        meal = DailyMeal.objects.get(id=meal_id, chef=request.user)
+        
+        # Get update data from request
+        update_data = request.data
+        
+        # Update allowed fields
+        allowed_fields = [
+            'main_dish', 'side_dish', 'additional_items',
+            'extra_portions', 'price_per_portion', 'order_cutoff_time',
+            'pickup_available', 'delivery_available', 'delivery_radius'
+        ]
+        
+        for field in allowed_fields:
+            if field in update_data:
+                setattr(meal, field, update_data[field])
+        
+        meal.save()
+        
+        # Return updated meal data
+        serializer = DailyMealSerializer(meal)
+        return Response({
+            'success': True,
+            'meal': serializer.data,
+            'message': 'Meal updated successfully'
+        })
+    except DailyMeal.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Meal not found or you do not have permission to modify it'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+

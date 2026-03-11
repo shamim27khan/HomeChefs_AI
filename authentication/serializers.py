@@ -5,10 +5,11 @@ from .models import User, ChefProfile, CustomerProfile, PhoneOTP
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
+    chef_profile = serializers.JSONField(write_only=True, required=False)
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'confirm_password', 'first_name', 'last_name', 'phone_number', 'role']
+        fields = ['username', 'email', 'password', 'confirm_password', 'first_name', 'last_name', 'phone_number', 'role', 'chef_profile']
     
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -20,15 +21,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             if User.objects.filter(phone_number=phone_number).exists():
                 raise serializers.ValidationError("This phone number is already registered. Please use a different phone number or login with your existing account.")
         
+        # Validate chef profile data if provided
+        if attrs.get('role') == 'chef' and attrs.get('chef_profile'):
+            chef_profile = attrs['chef_profile']
+            required_fields = ['address_line1', 'area', 'city', 'pincode', 'cuisine_specialties']
+            for field in required_fields:
+                if not chef_profile.get(field):
+                    raise serializers.ValidationError(f"Chef profile field '{field}' is required")
+        
         return attrs
     
     def create(self, validated_data):
+        chef_profile_data = validated_data.pop('chef_profile', None)
         validated_data.pop('confirm_password')
         user = User.objects.create_user(**validated_data)
         
         # Create profile based on role
         if user.role == 'chef':
-            ChefProfile.objects.create(user=user)
+            if chef_profile_data:
+                # Create chef profile with provided data
+                ChefProfile.objects.create(user=user, **chef_profile_data)
+            else:
+                # Create basic chef profile
+                ChefProfile.objects.create(user=user)
         elif user.role == 'customer':
             CustomerProfile.objects.create(user=user)
         
