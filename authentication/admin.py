@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, ChefProfile, CustomerProfile
+from .models import User, CustomerProfile
+from chefs.models import ChefProfile
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
@@ -15,13 +16,6 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
         ('Additional Info', {'fields': ('role', 'phone_number', 'email')}),
     )
-
-@admin.register(ChefProfile)
-class ChefProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'cuisine_specialties', 'experience_years', 'rating', 'is_verified']
-    list_filter = ['is_verified', 'experience_years']
-    search_fields = ['user__username', 'cuisine_specialties']
-    readonly_fields = ['rating']
 
 @admin.register(CustomerProfile)
 class CustomerProfileAdmin(admin.ModelAdmin):

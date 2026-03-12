@@ -48,6 +48,16 @@ def login_page(request):
     """Serve the login page"""
     return render(request, 'HomeChefs/login.html')
 
+def admin_dashboard(request):
+    """Admin dashboard with chef verification functionality"""
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    
+    if request.user.role != 'admin':
+        return redirect('/')
+    
+    return render(request, 'HomeChefs/admin_dashboard.html')
+
 def index_zomato_style(request):
     """Serve the Zomato-style homepage"""
     frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')

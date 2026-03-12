@@ -51,6 +51,7 @@ urlpatterns = [
     path('login/', views.login_page, name='login_page'),
     path('logout/', views.logout_view, name='logout'),
     path('admin/', admin.site.urls),
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('api/auth/', include('authentication.urls')),
     path('api/chefs/', include('chefs.urls')),
     path('api/customers/', include('customers.urls')),

@@ -353,6 +353,14 @@ def today_meals(request):
     print(f"Initial query: date={today}, is_active=True")
     print(f"Found {meals.count()} meals")
     
+    # Filter out meals that are past their cutoff time
+    orderable_meals = [meal for meal in meals if meal.is_orderable]
+    print(f"After cutoff time filter: {len(orderable_meals)} orderable meals")
+    
+    # Convert back to queryset for further filtering
+    meal_ids = [meal.id for meal in orderable_meals]
+    meals = DailyMeal.objects.filter(id__in=meal_ids).select_related('chef', 'chef__chefprofile')
+    
     # Apply filters
     if area:
         meals = meals.filter(chef__chefprofile__area__icontains=area)
@@ -504,6 +512,14 @@ def nearby_dishes(request):
         is_active=True,
         current_orders__lt=F('extra_portions')
     ).select_related('chef', 'chef__chefprofile')
+    
+    # Filter out meals that are past their cutoff time
+    orderable_meals = [meal for meal in meals if meal.is_orderable]
+    print(f"Nearby dishes: {len(orderable_meals)} orderable meals from {meals.count()} total meals")
+    
+    # Convert back to queryset for distance filtering
+    meal_ids = [meal.id for meal in orderable_meals]
+    meals = DailyMeal.objects.filter(id__in=meal_ids).select_related('chef', 'chef__chefprofile')
     
     # Only from verified chefs (for MVP, show all chefs)
     # meals = meals.filter(chef__chefprofile__is_verified=True)
