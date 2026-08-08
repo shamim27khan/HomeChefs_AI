@@ -1,5 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from decimal import Decimal
 from authentication.models import User
 from chefs.models import DailyMeal
 
@@ -10,6 +13,10 @@ class DailyMealOrder(models.Model):
         ('confirmed', 'Confirmed'),
         ('preparing', 'Preparing'),
         ('ready', 'Ready for Pickup'),
+        ('out_for_delivery', 'Out for Delivery'),
+        ('picked_up', 'Picked Up'),
+        ('in_transit', 'In Transit'),
+        ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
     )
     
@@ -176,3 +183,65 @@ class Delivery(models.Model):
     
     def __str__(self):
         return f"Delivery for Order {self.order.order_id}"
+
+
+# Signal handler for automatic delivery request creation
+@receiver(post_save, sender=DailyMealOrder)
+def create_delivery_requests_for_ready_orders(sender, instance, created, **kwargs):
+    """
+    Automatically create delivery requests when order reaches 'ready' or 'preparing' status
+    """
+    # Only create requests for existing orders, not new ones
+    if created:
+        return
+    
+    # Create delivery requests for orders that need delivery
+    if instance.order_status in ['ready', 'preparing']:
+        try:
+            # Import here to avoid circular imports
+            from delivery.models import DeliveryPartner, DeliveryRequest
+            
+            # Get available delivery partners
+            available_partners = DeliveryPartner.objects.filter(
+                is_available=True,
+                verification_status='verified'
+            )
+            
+            # Create delivery requests for each available partner
+            delivery_requests_created = 0
+            for partner in available_partners:
+                # Check if request already exists
+                existing_request = DeliveryRequest.objects.filter(
+                    order=instance,
+                    delivery_partner=partner,
+                    status='pending'
+                ).first()
+                
+                if not existing_request:
+                    from django.utils import timezone
+                    from datetime import timedelta
+                    
+                    # Calculate estimated times and fees
+                    estimated_pickup_time = instance.estimated_ready_time or (timezone.now() + timedelta(minutes=15))
+                    estimated_delivery_time = estimated_pickup_time + timedelta(minutes=30)
+                    delivery_fee = instance.delivery_fee or Decimal('50.00')  # Default delivery fee
+                    
+                    DeliveryRequest.objects.create(
+                        order=instance,
+                        delivery_partner=partner,
+                        status='pending',
+                        estimated_pickup_time=estimated_pickup_time,
+                        estimated_delivery_time=estimated_delivery_time,
+                        delivery_fee=delivery_fee
+                    )
+                    delivery_requests_created += 1
+            
+            # Update order status to show it's awaiting delivery assignment
+            if delivery_requests_created > 0 and instance.order_status == 'ready':
+                instance.order_status = 'out_for_delivery'
+                instance.save()
+            
+            print(f"Created {delivery_requests_created} delivery requests for order #{instance.order_id}")
+            
+        except Exception as e:
+            print(f"Error creating delivery requests for order #{instance.order_id}: {e}")

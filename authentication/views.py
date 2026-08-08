@@ -2,7 +2,7 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from .models import User, ChefProfile, CustomerProfile, PhoneOTP
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, ChefProfileSerializer, CustomerProfileSerializer, OTPRequestSerializer, OTPVerifySerializer
 from drf_yasg.utils import swagger_auto_schema
@@ -247,6 +247,19 @@ def user_login(request):
                             'message': 'User account is disabled',
                             'error': 'account_disabled'
                         }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Login the user
+                    login(request, user)
+                    
+                    # Get or create token
+                    token, created = Token.objects.get_or_create(user=user)
+                    
+                    return Response({
+                        'user': UserProfileSerializer(user).data,
+                        'token': token.key,
+                        'message': 'Login successful'
+                    }, status=status.HTTP_200_OK)
+                    
                 except User.DoesNotExist:
                     return Response({
                         'message': 'No account found with this phone number',

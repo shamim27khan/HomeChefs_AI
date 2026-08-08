@@ -2,6 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
+    <!-- Optimized OTP Fix -->
+    <script>
+        // Prevent multiple executions
+        let otpFixed = false;
+        
+        function fixOTP() {
+            if (otpFixed) return;
+            
+            const otpTab = document.getElementById('otp-tab');
+            const otpLogin = document.getElementById('otp-login');
+            const passwordTab = document.getElementById('password-tab');
+            const passwordLogin = document.getElementById('password-login');
+            
+            if (otpTab) {
+                otpTab.style.display = 'block';
+                otpTab.style.visibility = 'visible';
+                otpTab.classList.remove('d-none', 'hidden', 'invisible');
+            }
+            
+            if (otpLogin) {
+                otpLogin.style.display = 'block';
+                otpLogin.style.visibility = 'visible';
+                otpLogin.classList.remove('d-none', 'hidden', 'invisible');
+            }
+            
+            otpFixed = true;
+        }
+        
+        // Run once when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fixOTP);
+        } else {
+            fixOTP();
+        }
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HomeChefHub - Homemade Food Delivery{% endblock %}</title>
     
@@ -225,6 +262,69 @@
         
         {% block extra_styles %}{% endblock %}
     </style>
+
+    <!-- OTP Visibility Fix -->
+    <style>
+        .otp-visibility-fix {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        #otp-tab {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        #otp-login {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        .nav-pills .nav-link {
+            min-width: 100px;
+        }
+    </style>
+
+
+    <!-- Aggressive OTP Visibility Fix -->
+    <style>
+        /* Force OTP tab visibility with higher specificity */
+        body div.modal div.modal-content div.modal-body ul.nav-pills li.nav-item button#otp-tab {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative !important;
+            z-index: 1000 !important;
+            width: auto !important;
+            height: auto !important;
+        }
+        
+        /* Force OTP login form visibility */
+        body div.modal div.modal-content div.modal-body div.tab-content div#otp-login {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Ensure nav pills are visible */
+        .nav-pills .nav-link {
+            display: inline-block !important;
+            visibility: visible !important;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* Debug border to see if element exists */
+        #otp-tab {
+            border: 2px solid red !important;
+            background-color: yellow !important;
+        }
+        
+        #otp-login {
+            border: 2px solid blue !important;
+        }
+    </style>
+
 </head>
 <body>
     <!-- Navigation -->
@@ -828,24 +928,36 @@
                 if (response.ok) {
                     // Login successful
                     console.log('Login successful, storing data...');
-                    localStorage.setItem('authToken', result.token);
-                    localStorage.setItem('user', JSON.stringify(result.user));
-                    
-                    showAlert(`Welcome back, ${result.user.username}!`, 'success');
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-                    modal.hide();
-                    
-                    // Clear login forms
-                    resetLoginForm();
-                    resetLoginOTPForm();
-                    
-                    // Update UI to show logged in state
-                    updateAuthUI(result.user);
-                    
-                    // Reload page after short delay to show logged-in state
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
+                    try {
+                        localStorage.setItem('authToken', result.token);
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        
+                        showAlert(`Welcome back, ${result.user.username}!`, 'success');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        // Clear login forms
+                        resetLoginForm();
+                        resetLoginOTPForm();
+                        
+                        // Update UI to show logged in state
+                        try {
+                            updateAuthUI(result.user);
+                        } catch (uiError) {
+                            console.error('Error updating UI:', uiError);
+                            // Continue anyway, the reload will fix it
+                        }
+                        
+                        // Reload page after short delay to show logged-in state
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } catch (storageError) {
+                        console.error('Error storing login data:', storageError);
+                        showAlert('Login successful but error saving session. Please refresh.', 'warning');
+                    }
                 } else {
                     console.log('Login failed:', result);
                     showAlert(result.message || 'Invalid OTP', 'danger');
@@ -1228,13 +1340,12 @@
         function logout() {
             console.log('Logout called');
             
-            // Clear client-side authentication data
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            sessionStorage.removeItem('isLoggingOut');
+            // Clear all client-side authentication data
+            localStorage.clear();
+            sessionStorage.clear();
             
-            // Redirect to server-side logout endpoint
-            window.location.href = '/logout/';
+            // Force immediate redirect to server-side logout endpoint
+            window.location.replace('/logout/');
             
             // Prevent any further execution
             return false;
@@ -1343,36 +1454,33 @@
         
         // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Base template loaded, checking auth...');
-            
             // Fix any remaining placeholder.com images
             const placeholderImages = document.querySelectorAll('img[src*="via.placeholder.com"]');
             placeholderImages.forEach(img => {
-                const originalSrc = img.src;
                 const seed = Math.random().toString(36).substring(7);
                 img.src = `https://picsum.photos/seed/${seed}/300/200.jpg`;
-                console.log('Fixed placeholder image:', originalSrc, '→', img.src);
             });
+            
+            // Don't update auth UI if we're on login page (user just logged out)
+            if (window.location.pathname === '/login/' || window.location.pathname === '/logout/') {
+                console.log('On login/logout page, skipping auth UI update');
+                localStorage.clear();
+                sessionStorage.clear();
+                return;
+            }
             
             const token = localStorage.getItem('authToken');
             const userStr = localStorage.getItem('user');
             
-            console.log('Token exists:', !!token);
-            console.log('User exists:', !!userStr);
-            
             if (token && userStr) {
                 try {
                     const user = JSON.parse(userStr);
-                    console.log('User logged in:', user.username);
                     updateAuthUI(user);
                 } catch (e) {
-                    console.error('Error parsing user data:', e);
                     // Clear corrupted data
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('user');
                 }
-            } else {
-                console.log('No auth data found, user not logged in');
             }
             
             // Add event listener to reset form when modal is hidden
@@ -1395,5 +1503,8 @@
         // Common API base
         const API_BASE = '/api/mvp';
     </script>
+
+    <!-- Removed duplicate OTP fix for performance -->
+
 </body>
 </html>

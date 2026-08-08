@@ -11,4 +11,6 @@ urlpatterns = [
     path('search-history/', views.search_history, name='search_history'),
     path('search/chefs/', views.search_chefs, name='search_chefs'),
     path('search/food/', views.search_food, name='search_food'),
+    path('rate-customer/<int:order_id>/', views.rate_customer, name='rate_customer'),
+    path('my-ratings/', views.get_customer_ratings, name='get_customer_ratings'),
 ]

@@ -23,5 +23,7 @@ urlpatterns = [
     
     # Admin MVP URLs
     path('admin/verification/', views_mvp.admin_chef_verification, name='admin_chef_verification'),
+    path('admin/chefs/', views_mvp.admin_chefs, name='admin_chefs'),
+    path('admin/delivery-partners/', views_mvp.admin_delivery_partners, name='admin_delivery_partners'),
     path('admin/dashboard/', views_mvp.admin_dashboard, name='admin_dashboard'),
 ]

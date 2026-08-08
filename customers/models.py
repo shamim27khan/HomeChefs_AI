@@ -63,3 +63,30 @@ class SearchHistory(models.Model):
     
     def __str__(self):
         return f"Search '{self.query}' by {self.customer.username}"
+
+class CustomerRating(models.Model):
+    """Rating system for chefs to rate customers"""
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_ratings')
+    chef = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_customer_ratings')
+    order = models.ForeignKey('orders.DailyMealOrder', on_delete=models.CASCADE, related_name='customer_ratings')
+    rating = models.PositiveIntegerField(
+        choices=[(i, f"{i} Stars") for i in range(1, 6)],
+        help_text="Rating from 1 to 5 stars"
+    )
+    feedback = models.TextField(
+        blank=True,
+        max_length=300,
+        help_text="Optional feedback about the customer (max 300 chars)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['customer', 'order']
+    
+    def __str__(self):
+        return f"Rating for {self.customer.username} by {self.chef.username} ({self.rating} stars)"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update customer's rating when rating is saved
+        self.customer.update_rating()

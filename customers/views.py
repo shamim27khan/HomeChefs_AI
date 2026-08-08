@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import models
-from .models import FavoriteChef, FavoriteFood, FoodReview, CustomerAddress, SearchHistory
+from .models import FavoriteChef, FavoriteFood, FoodReview, CustomerAddress, SearchHistory, CustomerRating
 from .serializers import FavoriteChefSerializer, FavoriteFoodSerializer, FoodReviewCreateSerializer, FoodReviewSerializer, CustomerAddressSerializer, SearchHistorySerializer
 from chefs.models import FoodItem, ChefReview
 from chefs.serializers import FoodItemSerializer
@@ -640,3 +640,65 @@ def search_food(request):
     
     serializer = FoodItemSerializer(food_items, many=True)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def rate_customer(request, order_id):
+    """Rate a customer (chef endpoint)"""
+    if request.user.role != 'chef':
+        return Response({'error': 'Only chefs can rate customers'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from orders.models import DailyMealOrder
+    order = get_object_or_404(DailyMealOrder, id=order_id, daily_meal__chef=request.user)
+    
+    # Check if order is delivered
+    if order.order_status != 'delivered':
+        return Response({'error': 'You can only rate customers for delivered orders'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if already rated
+    if CustomerRating.objects.filter(customer=order.customer, order=order).exists():
+        return Response({'error': 'You have already rated this customer for this order'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    rating = request.data.get('rating')
+    feedback = request.data.get('feedback', '')
+    
+    if not rating or int(rating) < 1 or int(rating) > 5:
+        return Response({'error': 'Rating must be between 1 and 5'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create rating
+    customer_rating = CustomerRating.objects.create(
+        customer=order.customer,
+        chef=request.user,
+        order=order,
+        rating=rating,
+        feedback=feedback
+    )
+    
+    return Response({'message': 'Customer rated successfully', 'rating': customer_rating.rating})
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_customer_ratings(request):
+    """Get ratings for the authenticated customer"""
+    if request.user.role != 'customer':
+        return Response({'error': 'Only customers can access their ratings'}, status=status.HTTP_403_FORBIDDEN)
+    
+    ratings = CustomerRating.objects.filter(customer=request.user).select_related('chef', 'order')
+    ratings_data = []
+    
+    for rating in ratings:
+        ratings_data.append({
+            'id': rating.id,
+            'chef': {
+                'id': rating.chef.id,
+                'username': rating.chef.username,
+                'first_name': rating.chef.first_name,
+                'last_name': rating.chef.last_name
+            },
+            'order_id': rating.order.order_id,
+            'rating': rating.rating,
+            'feedback': rating.feedback,
+            'created_at': rating.created_at
+        })
+    
+    return Response(ratings_data)

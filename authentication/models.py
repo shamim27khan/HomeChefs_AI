@@ -7,6 +7,7 @@ class User(AbstractUser):
     USER_ROLES = (
         ('chef', 'Chef'),
         ('customer', 'Customer'),
+        ('delivery_partner', 'Delivery Partner'),
         ('admin', 'Admin'),
     )
     
@@ -15,11 +16,45 @@ class User(AbstractUser):
     address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     is_phone_verified = models.BooleanField(default=False)
+    
+    # Rating fields (for customers and delivery partners)
+    average_rating = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Average rating received (1-5)"
+    )
+    total_ratings = models.PositiveIntegerField(
+        default=0,
+        help_text="Total number of ratings received"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
+    
+    def update_rating(self):
+        """Update average rating based on received ratings"""
+        from django.db.models import Avg
+        
+        if self.role == 'customer':
+            # Update based on ratings from chefs
+            from customers.models import CustomerRating
+            ratings = CustomerRating.objects.filter(customer=self)
+            if ratings.exists():
+                self.average_rating = ratings.aggregate(Avg('rating'))['rating__avg']
+                self.total_ratings = ratings.count()
+                self.save()
+        elif self.role == 'delivery_partner':
+            # Update based on delivery ratings
+            from delivery.models import DeliveryRating
+            ratings = DeliveryRating.objects.filter(delivery_assignment__delivery_partner__user=self)
+            if ratings.exists():
+                self.average_rating = ratings.aggregate(Avg('rating'))['rating__avg']
+                self.total_ratings = ratings.count()
+                self.save()
 
 class PhoneOTP(models.Model):
     phone_number = models.CharField(max_length=15)

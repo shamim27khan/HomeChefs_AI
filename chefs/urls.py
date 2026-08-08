@@ -8,4 +8,5 @@ urlpatterns = [
     path('reviews/', views.chef_reviews, name='chef_reviews'),
     path('public/', views.public_chef_list, name='public_chef_list'),
     path('public/<int:chef_id>/', views.public_chef_detail, name='public_chef_detail'),
+    path('rate-meal/<int:meal_id>/', views.rate_meal, name='rate_meal'),
 ]

@@ -2,7 +2,7 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import FoodItem, FoodSchedule, ChefReview
+from .models import FoodItem, FoodSchedule, ChefReview, CustomerReview
 from .serializers import FoodItemSerializer, FoodItemCreateSerializer, FoodScheduleSerializer, FoodScheduleCreateSerializer, ChefReviewSerializer
 from authentication.models import ChefProfile
 from drf_yasg.utils import swagger_auto_schema
@@ -400,3 +400,44 @@ def public_chef_detail(request, chef_id):
     }
     
     return Response(chef_data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def rate_meal(request, meal_id):
+    """Rate a daily meal (customer endpoint)"""
+    if request.user.role != 'customer':
+        return Response({'error': 'Only customers can rate meals'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from .models import DailyMeal
+    meal = get_object_or_404(DailyMeal, id=meal_id)
+    
+    # Check if customer has ordered this meal
+    from orders.models import DailyMealOrder
+    has_ordered = DailyMealOrder.objects.filter(
+        daily_meal=meal,
+        customer=request.user,
+        order_status='delivered'
+    ).exists()
+    
+    if not has_ordered:
+        return Response({'error': 'You can only rate meals you have ordered and received'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if already rated
+    if CustomerReview.objects.filter(daily_meal=meal, customer=request.user).exists():
+        return Response({'error': 'You have already rated this meal'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    rating = request.data.get('rating')
+    comment = request.data.get('comment', '')
+    
+    if not rating or int(rating) < 1 or int(rating) > 5:
+        return Response({'error': 'Rating must be between 1 and 5'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create review
+    review = CustomerReview.objects.create(
+        daily_meal=meal,
+        customer=request.user,
+        rating=rating,
+        comment=comment
+    )
+    
+    return Response({'message': 'Meal rated successfully', 'rating': review.rating})

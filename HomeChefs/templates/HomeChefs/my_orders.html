@@ -550,7 +550,16 @@ async function submitRating(orderId) {
     const token = localStorage.getItem('authToken');
     
     try {
-        const response = await fetch(`/api/mvp/orders/${orderId}/rate/`, {
+        // Get the meal ID from the order
+        const orderResponse = await fetch(`/api/mvp/orders/${orderId}/`, {
+            headers: {
+                'Authorization': `Token ${token}`
+            }
+        });
+        const orderData = await orderResponse.json();
+        
+        // Rate the meal using the new API
+        const response = await fetch(`/api/chefs/rate-meal/${orderData.daily_meal}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -558,7 +567,7 @@ async function submitRating(orderId) {
             },
             body: JSON.stringify({
                 rating: parseInt(rating),
-                feedback: feedback
+                comment: feedback
             })
         });
         

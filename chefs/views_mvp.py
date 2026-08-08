@@ -15,8 +15,8 @@ from authentication.models import User
 from .models import DailyMeal, ChefProfile, DailyEarning, CustomerReview
 from .serializers_mvp import (
     DailyMealSerializer, DailyMealCreateSerializer, ChefProfileSerializer,
-    PublicChefSerializer, TodayMealsSerializer, CustomerReviewSerializer,
-    DailyEarningSerializer
+    PublicChefSerializer, AdminChefSerializer, TodayMealsSerializer, 
+    CustomerReviewSerializer, DailyEarningSerializer
 )
 
 # Custom decorator to bypass CSRF for API views
@@ -431,7 +431,7 @@ def admin_chef_verification(request):
             role='chef',
             chefprofile__in=pending_chefs
         )
-        serializer = PublicChefSerializer(chefs, many=True)
+        serializer = AdminChefSerializer(chefs, many=True)
         return Response(serializer.data)
     
     elif request.method == 'POST':
@@ -447,9 +447,62 @@ def admin_chef_verification(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAdminUser])
+def admin_chefs(request):
+    """Admin can view complete chef information"""
+    chefs = User.objects.filter(role='chef').order_by('-date_joined')
+    serializer = AdminChefSerializer(chefs, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def admin_delivery_partners(request):
+    """Admin can view delivery partner information"""
+    from delivery.models import DeliveryPartner
+    
+    delivery_partners = DeliveryPartner.objects.select_related('user').all().order_by('-created_at')
+    
+    # Manual serialization since delivery app doesn't have serializers
+    partners_data = []
+    for partner in delivery_partners:
+        partners_data.append({
+            'id': partner.id,
+            'user': {
+                'id': partner.user.id,
+                'username': partner.user.username,
+                'first_name': partner.user.first_name,
+                'last_name': partner.user.last_name,
+                'email': partner.user.email,
+            },
+            'phone_number': partner.phone_number,
+            'vehicle_type': partner.vehicle_type,
+            'vehicle_number': partner.vehicle_number,
+            'license_number': partner.license_number,
+            'current_latitude': partner.current_latitude,
+            'current_longitude': partner.current_longitude,
+            'current_location': f"{partner.current_latitude}, {partner.current_longitude}" if partner.current_latitude and partner.current_longitude else None,
+            'last_location_update': partner.last_location_update,
+            'status': partner.status,
+            'verification_status': partner.verification_status,
+            'is_available': partner.is_available,
+            'total_deliveries': partner.total_deliveries,
+            'completed_orders': partner.total_deliveries,  # Alias for compatibility
+            'average_rating': partner.average_rating,
+            'completion_rate': partner.completion_rate,
+            'service_areas': partner.service_areas,
+            'max_delivery_distance': partner.max_delivery_distance,
+            'created_at': partner.created_at,
+        })
+    
+    return Response(partners_data)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
 def admin_dashboard(request):
     """Admin dashboard with key metrics"""
     from django.db.models import Count, Sum, Q
+    from datetime import date
+    from orders.models import DailyMealOrder
+    from chefs.models import DailyMeal
     
     today = date.today()
     
@@ -457,6 +510,11 @@ def admin_dashboard(request):
     total_chefs = User.objects.filter(role='chef').count()
     verified_chefs = User.objects.filter(role='chef', chefprofile__is_verified=True).count()
     total_customers = User.objects.filter(role='customer').count()
+    total_delivery_partners = User.objects.filter(role='delivery_partner').count()
+    verified_delivery_partners = User.objects.filter(
+        role='delivery_partner', 
+        delivery_partner__verification_status='verified'
+    ).count()
     
     # Today's metrics
     today_meals = DailyMeal.objects.filter(date=today).count()
@@ -477,7 +535,10 @@ def admin_dashboard(request):
             'total_chefs': total_chefs,
             'verified_chefs': verified_chefs,
             'total_customers': total_customers,
-            'verification_rate': round((verified_chefs / total_chefs * 100) if total_chefs > 0 else 0, 1)
+            'total_delivery_partners': total_delivery_partners,
+            'verified_delivery_partners': verified_delivery_partners,
+            'chef_verification_rate': round((verified_chefs / total_chefs * 100) if total_chefs > 0 else 0, 1),
+            'delivery_partner_verification_rate': round((verified_delivery_partners / total_delivery_partners * 100) if total_delivery_partners > 0 else 0, 1)
         },
         'today': {
             'meals_posted': today_meals,
