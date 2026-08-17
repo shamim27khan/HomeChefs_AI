@@ -10,54 +10,9 @@ from drf_yasg import openapi
 
 @swagger_auto_schema(
     method='post',
+    tags=['Authentication'],
     operation_description="Register a new user for HomeChefs platform. Choose between 'chef' or 'customer' role.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['username', 'email', 'password', 'confirm_password', 'role'],
-        properties={
-            'username': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Unique username for login (3-30 characters)',
-                example='john_doe123'
-            ),
-            'email': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Valid email address for account verification',
-                example='john@example.com'
-            ),
-            'password': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Password (minimum 8 characters, must contain letters and numbers)',
-                example='password123'
-            ),
-            'confirm_password': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Re-enter password for confirmation',
-                example='password123'
-            ),
-            'first_name': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='First name (optional)',
-                example='John'
-            ),
-            'last_name': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Last name (optional)',
-                example='Doe'
-            ),
-            'role': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                enum=['chef', 'customer'], 
-                description='User role: chef (can sell food) or customer (can buy food)',
-                example='customer'
-            ),
-            'phone_number': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Phone number for delivery and communication (optional)',
-                example='+1234567890'
-            ),
-        }
-    ),
+    request_body=UserRegistrationSerializer,
     responses={
         201: openapi.Response(
             description='Registration successful',
@@ -128,23 +83,9 @@ def register(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Authentication'],
     operation_description="Login to HomeChefs platform using username and password. Returns authentication token for API access.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['username', 'password'],
-        properties={
-            'username': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Your registered username',
-                example='customer_anjali'
-            ),
-            'password': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Your account password',
-                example='customer123'
-            ),
-        }
-    ),
+    request_body=UserLoginSerializer,
     responses={
         200: openapi.Response(
             description='Login successful',
@@ -329,6 +270,7 @@ def user_login(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Authentication'],
     operation_description="Logout from HomeChefs platform. Invalidates the authentication token.",
     responses={
         200: openapi.Response(
@@ -367,11 +309,13 @@ def user_logout(request):
 
 @swagger_auto_schema(
     method='get',
+    tags=['Authentication'],
     operation_description="Get user profile information",
     responses={200: openapi.Response('Profile data'), 401: openapi.Response('Unauthorized')}
 )
 @swagger_auto_schema(
     method='put',
+    tags=['Authentication'],
     operation_description="Update user profile information",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -441,6 +385,11 @@ def profile(request):
     return Response({'error': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Authentication'],
+    operation_description="Request OTP for phone number verification."
+)
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def request_otp(request):
@@ -464,6 +413,11 @@ def request_otp(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    method='post',
+    tags=['Authentication'],
+    operation_description="Verify OTP code for phone number verification."
+)
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def verify_otp(request):

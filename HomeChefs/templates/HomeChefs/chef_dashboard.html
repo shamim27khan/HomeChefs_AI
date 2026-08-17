@@ -643,12 +643,14 @@ async function loadDashboardData() {
             return;
         }
 
-        // Load dashboard stats
-        await Promise.all([
-            loadTodayStats(),
-            loadRecentOrders(),
-            loadTodayMeals()
-        ]);
+        console.log('Starting to load dashboard data...');
+        
+        // Load dashboard stats sequentially to avoid hanging
+        await loadTodayStats();
+        await loadRecentOrders();
+        await loadTodayMeals();
+        
+        console.log('Dashboard data loaded successfully');
     } catch (error) {
         console.error('Error loading dashboard data:', error);
     }
@@ -657,18 +659,23 @@ async function loadDashboardData() {
 async function loadTodayStats() {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/mvp/orders/chef-stats/', {
+        console.log('Loading chef stats...');
+        const response = await fetch('/api/orders/daily/chef-stats/', {
             headers: {
                 'Authorization': `Token ${token}`
             }
         });
 
+        console.log('Chef stats response status:', response.status);
         if (response.ok) {
             const stats = await response.json();
+            console.log('Chef stats data:', stats);
             document.getElementById('todayOrders').textContent = stats.today_orders || 0;
             document.getElementById('activeMeals').textContent = stats.active_meals || 0;
             document.getElementById('totalRevenue').textContent = `₹${stats.today_revenue || 0}`;
             document.getElementById('avgRating').textContent = (stats.average_rating || 0).toFixed(1);
+        } else {
+            console.error('Chef stats failed:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -678,15 +685,20 @@ async function loadTodayStats() {
 async function loadRecentOrders() {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/mvp/orders/chef-orders/', {
+        console.log('Loading recent orders...');
+        const response = await fetch('/api/orders/daily/chef-orders/', {
             headers: {
                 'Authorization': `Token ${token}`
             }
         });
 
+        console.log('Recent orders response status:', response.status);
         if (response.ok) {
             const orders = await response.json();
+            console.log('Recent orders data:', orders);
             displayRecentOrders(orders.slice(0, 5)); // Show only 5 recent orders
+        } else {
+            console.error('Recent orders failed:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('Error loading orders:', error);
@@ -703,7 +715,7 @@ async function loadTodayMeals() {
     try {
         console.log('Loading today\'s meals...');
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/mvp/chefs/my-meals/', {
+        const response = await fetch('/api/chefs/dashboard/my-meals/', {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -798,7 +810,7 @@ function showLocationModal() {
 function loadCurrentLocation() {
     // Load existing chef profile data
     const token = localStorage.getItem('authToken');
-    fetch('/api/mvp/chefs/profile/', {
+    fetch('/api/chefs/dashboard/profile/', {
         headers: {
             'Authorization': `Token ${token}`
         }
@@ -857,7 +869,7 @@ function saveLocation() {
     
     const token = localStorage.getItem('authToken');
     
-    fetch('/api/mvp/chefs/profile/', {
+    fetch('/api/chefs/dashboard/profile/', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -933,7 +945,7 @@ async function createMeal(mealData) {
         const token = localStorage.getItem('authToken');
         console.log('Token:', token ? 'exists' : 'missing');
         
-        const response = await fetch('/api/mvp/chefs/daily-meals/', {
+        const response = await fetch('/api/chefs/dashboard/meals/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1017,7 +1029,7 @@ async function loadMealsManagement() {
         const dateFilter = document.getElementById('mealsFilterDate').value;
         const statusFilter = document.getElementById('mealsFilterStatus').value;
         
-        let url = '/api/mvp/chefs/daily-meals/';
+        let url = '/api/chefs/dashboard/meals/';
         const params = new URLSearchParams();
         if (dateFilter) params.append('date', dateFilter);
         if (statusFilter) params.append('status', statusFilter);
@@ -1081,7 +1093,7 @@ async function loadAllOrders() {
         const endDate = document.getElementById('ordersEndDate').value;
         const statusFilter = document.getElementById('ordersStatusFilter').value;
         
-        let url = '/api/mvp/orders/chef/';
+        let url = '/api/orders/daily/chef/';
         const params = new URLSearchParams();
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
@@ -1160,7 +1172,7 @@ async function loadAnalytics() {
         const period = document.getElementById('analyticsPeriod').value;
         const type = document.getElementById('analyticsType').value;
         
-        const response = await fetch(`/api/mvp/orders/chef-stats/?period=${period}&type=${type}`, {
+        const response = await fetch(`/api/orders/daily/chef-stats/?period=${period}&type=${type}`, {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -1255,7 +1267,7 @@ function editMeal(mealId) {
     }
     
     // Fetch meal data
-    fetch(`/api/mvp/chefs/daily-meals/${mealId}/`, {
+    fetch(`/api/chefs/dashboard/meals/${mealId}/`, {
         headers: {
             'Authorization': `Token ${token}`
         }
@@ -1315,7 +1327,7 @@ function saveMealChanges() {
     };
     
     // Send update request
-    fetch(`/api/mvp/chefs/daily-meals/${mealId}/update/`, {
+    fetch(`/api/chefs/dashboard/meals/${mealId}/update/`, {
         method: 'PUT',
         headers: {
             'Authorization': `Token ${token}`,
@@ -1353,7 +1365,7 @@ function toggleMealStatus(mealId) {
         return;
     }
     
-    fetch(`/api/mvp/chefs/daily-meals/${mealId}/toggle-status/`, {
+    fetch(`/api/chefs/dashboard/meals/${mealId}/toggle-status/`, {
         method: 'POST',
         headers: {
             'Authorization': `Token ${token}`,
@@ -1387,7 +1399,7 @@ function confirmOrder(orderId) {
         return;
     }
     
-    updateOrderStatus(orderId, 'confirmed', '/api/mvp/orders/' + orderId + '/confirm/', 'POST')
+    updateOrderStatus(orderId, 'confirmed', '/api/orders/daily/' + orderId + '/confirm/', 'POST')
         .then(() => {
             loadAllOrders();
             loadOrderDetails(orderId);
@@ -1402,7 +1414,7 @@ function startPreparing(orderId) {
         return;
     }
     
-    updateOrderStatus(orderId, 'preparing', '/api/mvp/orders/' + orderId + '/status/', 'PUT')
+    updateOrderStatus(orderId, 'preparing', '/api/orders/daily/' + orderId + '/status/', 'PUT')
         .then(() => {
             loadAllOrders();
             loadOrderDetails(orderId);
@@ -1417,7 +1429,7 @@ function markReady(orderId) {
         return;
     }
     
-    updateOrderStatus(orderId, 'ready', '/api/mvp/orders/' + orderId + '/status/', 'PUT')
+    updateOrderStatus(orderId, 'ready', '/api/orders/daily/' + orderId + '/status/', 'PUT')
         .then(() => {
             loadAllOrders();
             loadOrderDetails(orderId);
@@ -1432,7 +1444,7 @@ function markAsDelivered(orderId) {
         return;
     }
     
-    updateOrderStatus(orderId, 'delivered', '/api/mvp/orders/' + orderId + '/deliver/', 'POST')
+    updateOrderStatus(orderId, 'delivered', '/api/orders/daily/' + orderId + '/deliver/', 'POST')
         .then(() => {
             loadAllOrders();
             loadOrderDetails(orderId);
@@ -1474,7 +1486,7 @@ async function updateOrderStatus(orderId, newStatus, endpoint, method) {
 function loadOrderDetails(orderId) {
     const token = localStorage.getItem('authToken');
     
-    fetch(`/api/mvp/orders/${orderId}/`, {
+    fetch(`/api/orders/daily/${orderId}/`, {
         headers: {
             'Authorization': `Token ${token}`
         }
