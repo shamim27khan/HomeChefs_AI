@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadOrders() {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/mvp/orders/customer/', {
+        const response = await fetch('/api/orders/daily/customer/', {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -321,7 +321,7 @@ function updateOrderStats() {
 async function viewOrderDetails(orderId) {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`/api/mvp/orders/${orderId}/`, {
+        const response = await fetch(`/api/orders/daily/${orderId}/`, {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -413,15 +413,15 @@ function confirmDelivery(orderId) {
     if (confirm('Have you received this order?')) {
         const token = localStorage.getItem('authToken');
         
-        fetch(`/api/mvp/orders/${orderId}/deliver/`, {
+        fetch(`/api/orders/daily/${orderId}/deliver/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Token ${token}`
             }
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(async response => {
+            const data = await response.json();
             if (response.ok) {
                 alert('Thank you for confirming delivery! You can now rate your order.');
                 refreshOrders();
@@ -551,7 +551,7 @@ async function submitRating(orderId) {
     
     try {
         // Get the meal ID from the order
-        const orderResponse = await fetch(`/api/mvp/orders/${orderId}/`, {
+        const orderResponse = await fetch(`/api/orders/daily/${orderId}/`, {
             headers: {
                 'Authorization': `Token ${token}`
             }

@@ -113,7 +113,7 @@
 
 {% block extra_js %}
 <script>
-const API_BASE = '/api/mvp';
+const API_BASE = '/api';
 
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -164,7 +164,7 @@ function showNoChefSelected() {
 async function loadChefDetails(chefId) {
     try {
         // Ensure API_BASE is available
-        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
         
         // Get all chefs and find the one we need
         const response = await fetch(`${apiBase}/chefs/public/`);
@@ -229,7 +229,7 @@ async function loadChefDetails(chefId) {
 
 async function loadTodayMeals(chefId) {
     try {
-        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
 
         const response = await fetch(`${apiBase}/chefs/today-meals/`);
         const meals = await response.json();
@@ -262,7 +262,7 @@ async function loadTodayMeals(chefId) {
 
 async function loadCustomerReviews(chefId) {
     try {
-        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api/mvp';
+        const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
 
         const response = await fetch(`${apiBase}/orders/chef/${chefId}/ratings/`, {
             headers: {
@@ -700,7 +700,7 @@ function searchNearbyDishes() {
     
     console.log(`Searching within ${radius}km of (${latitude}, ${longitude})`);
     
-    fetch(`${API_BASE}/dishes/nearby/?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
+    fetch(`${API_BASE}/chefs/nearby-dishes/?latitude=${latitude}&longitude=${longitude}&radius=${radius}`)
         .then(response => response.json())
         .then(data => {
             console.log('Nearby dishes found:', data);

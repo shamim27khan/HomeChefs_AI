@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadOrderDetails(orderId) {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`/api/mvp/orders/${orderId}/`, {
+        const response = await fetch(`/api/orders/daily/${orderId}/`, {
             headers: {
                 'Authorization': `Token ${token}`
             }

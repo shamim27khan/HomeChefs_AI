@@ -5,6 +5,8 @@ urlpatterns = [
     # Daily meal order endpoints (MVP)
     path('daily/create/', views.create_daily_meal_order, name='create_daily_meal_order'),
     path('daily/<int:order_id>/', views.daily_meal_order_detail, name='daily_meal_order_detail'),
+    path('daily/<int:order_id>/confirm/', views.confirm_daily_meal_order, name='confirm_daily_meal_order'),
+    path('daily/<int:order_id>/status/', views.update_daily_meal_order_status, name='update_daily_meal_order_status'),
     path('daily/<int:order_id>/deliver/', views.mark_daily_meal_as_delivered, name='mark_daily_meal_as_delivered'),
     path('daily/customer/', views.daily_meal_customer_orders, name='daily_meal_customer_orders'),
     

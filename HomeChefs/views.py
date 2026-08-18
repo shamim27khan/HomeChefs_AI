@@ -3,6 +3,22 @@ from django.http import HttpResponse, Http404, FileResponse
 from django.contrib.auth import logout as django_logout
 import os
 import mimetypes
+import json
+
+def _chef_dashboard_context(request, user):
+    from rest_framework.authtoken.models import Token
+    token, _ = Token.objects.get_or_create(user=user)
+    return {
+        'token': token.key,
+        'user_json': json.dumps({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+        })
+    }
 
 def home(request):
     """Serve the main homepage with role-based routing"""
@@ -10,7 +26,7 @@ def home(request):
     if request.user.is_authenticated:
         if request.user.role == 'chef':
             # Show chef dashboard
-            return render(request, 'HomeChefs/chef_dashboard.html')
+            return render(request, 'HomeChefs/chef_dashboard.html', _chef_dashboard_context(request, request.user))
         elif request.user.role == 'admin':
             # Show admin dashboard
             return render(request, 'HomeChefs/admin_dashboard.html')
@@ -24,8 +40,11 @@ def home(request):
 
 def chef_dashboard(request):
     """Chef dashboard with meal management functionality"""
-    # Don't check Django session auth - rely on frontend token authentication
-    return render(request, 'HomeChefs/chef_dashboard.html')
+    if not request.user.is_authenticated:
+        return redirect('/login/')
+    if request.user.role != 'chef':
+        return redirect('/')
+    return render(request, 'HomeChefs/chef_dashboard.html', _chef_dashboard_context(request, request.user))
 
 def customer_dashboard(request):
     """Customer dashboard with order functionality"""

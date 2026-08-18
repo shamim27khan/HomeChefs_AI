@@ -620,7 +620,20 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Chef dashboard loaded');
-    
+
+    // Seed frontend auth from Django session when available
+    const serverToken = "{{ token|default:'' }}";
+    const serverUser = {{ user_json|default:"null"|safe }};
+
+    if (serverToken && serverUser) {
+        if (!localStorage.getItem('authToken')) {
+            localStorage.setItem('authToken', serverToken);
+        }
+        if (!localStorage.getItem('user')) {
+            localStorage.setItem('user', JSON.stringify(serverUser));
+        }
+    }
+
     // Check if user is authenticated
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('user');

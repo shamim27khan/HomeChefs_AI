@@ -696,7 +696,7 @@ async function placeOrder() {
                     headers['X-CSRFToken'] = csrfToken;
                 }
                 
-                const response = await fetch('/api/mvp/orders/create/', {
+                const response = await fetch('/api/orders/daily/create/', {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(orderData)

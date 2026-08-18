@@ -5,6 +5,7 @@ urlpatterns = [
     # Customer endpoints (MVP)
     path('browse/', views.public_chefs, name='public_chefs'),
     path('today-meals/', views.today_meals, name='today_meals'),
+    path('nearby-dishes/', views.nearby_dishes, name='nearby_dishes'),
     path('rate-meal/<int:meal_id>/', views.rate_meal, name='rate_meal'),
     path('customer-review/<int:order_id>/', views.customer_review, name='customer_review'),
     
