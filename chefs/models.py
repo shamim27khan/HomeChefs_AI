@@ -144,6 +144,28 @@ class ChefProfile(models.Model):
         help_text="e.g., North Indian, South Indian, Chinese"
     )
     
+    # Rating and performance
+    average_rating = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Average rating from customers (1-5)"
+    )
+    total_reviews = models.PositiveIntegerField(
+        default=0,
+        help_text="Total number of reviews received"
+    )
+    total_orders_completed = models.PositiveIntegerField(
+        default=0,
+        help_text="Total number of orders completed"
+    )
+    on_time_delivery_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Percentage of orders delivered on time"
+    )
+    
     # Verification status
     is_verified = models.BooleanField(default=False)
     verification_date = models.DateTimeField(null=True, blank=True)
@@ -168,6 +190,25 @@ class ChefProfile(models.Model):
     def full_address(self):
         parts = [self.address_line1, self.address_line2, self.area, self.city, self.pincode]
         return ', '.join(filter(None, parts))
+    
+    def update_rating(self):
+        """Update average rating based on customer reviews"""
+        from django.db.models import Avg
+        reviews = CustomerReview.objects.filter(daily_meal__chef=self.user)
+        if reviews.exists():
+            self.average_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+            self.total_reviews = reviews.count()
+            self.save()
+    
+    def update_order_stats(self):
+        """Update order completion statistics"""
+        from orders.models import DailyMealOrder
+        completed_orders = DailyMealOrder.objects.filter(
+            daily_meal__chef=self.user,
+            order_status='delivered'
+        ).count()
+        self.total_orders_completed = completed_orders
+        self.save()
 
 class DailyEarning(models.Model):
     """Daily earnings summary for chefs"""
@@ -205,6 +246,15 @@ class CustomerReview(models.Model):
     
     def __str__(self):
         return f"{self.daily_meal} - {self.customer.username} ({self.rating} stars)"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update chef's rating when review is saved
+        try:
+            chef_profile = self.daily_meal.chef.chef_profile
+            chef_profile.update_rating()
+        except ChefProfile.DoesNotExist:
+            pass
 
 # Legacy models for backward compatibility (will be phased out)
 class FoodItem(models.Model):

@@ -14,6 +14,9 @@ def home(request):
         elif request.user.role == 'admin':
             # Show admin dashboard
             return render(request, 'HomeChefs/admin_dashboard.html')
+        elif request.user.role == 'delivery_partner':
+            # Show delivery partner dashboard
+            return redirect('/delivery/dashboard/')
         # Default to customer homepage for 'customer' role
     
     # Show customer homepage for non-authenticated users or customers
@@ -31,10 +34,20 @@ def customer_dashboard(request):
     return render(request, 'HomeChefs/my_orders.html')
 
 def logout_view(request):
-    """Proper logout that clears Django session and redirects to home"""
+    """Proper logout that clears Django session, token, and redirects to login page"""
     if request.user.is_authenticated:
+        # Delete the authentication token if it exists
+        try:
+            from rest_framework.authtoken.models import Token
+            token = Token.objects.get(user=request.user)
+            token.delete()
+        except Token.DoesNotExist:
+            pass
+        
+        # Clear Django session
         django_logout(request)
-    return redirect('home')
+    
+    return redirect('/login/')
 
 def index_mvp(request):
     """Serve the MVP homepage (alternative URL)"""

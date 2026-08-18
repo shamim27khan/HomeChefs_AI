@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import models
-from .models import FavoriteChef, FavoriteFood, FoodReview, CustomerAddress, SearchHistory
+from .models import FavoriteChef, FavoriteFood, FoodReview, CustomerAddress, SearchHistory, CustomerRating
 from .serializers import FavoriteChefSerializer, FavoriteFoodSerializer, FoodReviewCreateSerializer, FoodReviewSerializer, CustomerAddressSerializer, SearchHistorySerializer
 from chefs.models import FoodItem, ChefReview
 from chefs.serializers import FoodItemSerializer
@@ -13,6 +13,7 @@ from drf_yasg import openapi
 
 @swagger_auto_schema(
     method='post',
+    tags=['Customers'],
     operation_description="Add a chef to customer's favorites list. Only customers can access this endpoint.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -97,6 +98,11 @@ def favorite_chefs(request):
         else:
             return Response({'message': 'Chef already in favorites'}, status=status.HTTP_200_OK)
 
+@swagger_auto_schema(
+    method='delete',
+    tags=['Customers'],
+    operation_description="Remove a chef from customer's favorites list."
+)
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def remove_favorite_chef(request, chef_id):
@@ -112,6 +118,7 @@ def remove_favorite_chef(request, chef_id):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Customers'],
     operation_description="Add a food item to customer's favorites list. Only customers can access this endpoint.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -196,6 +203,11 @@ def favorite_foods(request):
         else:
             return Response({'message': 'Food item already in favorites'}, status=status.HTTP_200_OK)
 
+@swagger_auto_schema(
+    method='delete',
+    tags=['Customers'],
+    operation_description="Remove a food item from customer's favorites list."
+)
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def remove_favorite_food(request, food_id):
@@ -211,6 +223,7 @@ def remove_favorite_food(request, food_id):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Customers'],
     operation_description="Create a food review. Only customers can access this endpoint.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -318,6 +331,7 @@ def food_reviews(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Customers'],
     operation_description="Create a new delivery address. Only customers can access this endpoint.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -461,6 +475,11 @@ def addresses(request):
         address.delete()
         return Response({'message': 'Address deleted successfully'})
 
+@swagger_auto_schema(
+    method='get',
+    tags=['Customers'],
+    operation_description="Get customer's search history."
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def search_history(request):
@@ -473,44 +492,8 @@ def search_history(request):
 
 @swagger_auto_schema(
     method='get',
-    operation_description="Search for verified home chefs by name, username, or cuisine specialties. Returns all verified chefs by default.",
-    manual_parameters=[
-        openapi.Parameter(
-            'q', 
-            openapi.IN_QUERY, 
-            description="Search query for chef name, username, or cuisine specialties", 
-            type=openapi.TYPE_STRING,
-            example='rahul'
-        ),
-        openapi.Parameter(
-            'cuisine', 
-            openapi.IN_QUERY, 
-            description="Filter by cuisine type (North Indian, South Indian, Chinese, etc.)", 
-            type=openapi.TYPE_STRING,
-            example='North Indian'
-        ),
-    ],
-    responses={
-        200: openapi.Response(
-            'List of verified chefs', 
-            examples={
-                'application/json': [
-                    {
-                        'id': 2,
-                        'username': 'chef_rahul',
-                        'first_name': 'Rahul',
-                        'last_name': 'Kumar',
-                        'bio': 'Expert in North Indian and Mughlai cuisine with 10 years of experience',
-                        'cuisine_specialties': 'North Indian, Mughlai, Chinese',
-                        'experience_years': 10,
-                        'rating': 5.0,
-                        'delivery_radius': 5,
-                        'profile_picture': None
-                    }
-                ]
-            }
-        )
-    }
+    tags=['Customers'],
+    operation_description="Search for verified home chefs by name, username, or cuisine specialties."
 )
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -550,65 +533,8 @@ def search_chefs(request):
 
 @swagger_auto_schema(
     method='get',
-    operation_description="Search for available food items with advanced filtering. Returns all available food items by default.",
-    manual_parameters=[
-        openapi.Parameter(
-            'q', 
-            openapi.IN_QUERY, 
-            description="Search query for food name, description, or ingredients", 
-            type=openapi.TYPE_STRING,
-            example='biryani'
-        ),
-        openapi.Parameter(
-            'cuisine', 
-            openapi.IN_QUERY, 
-            description="Filter by cuisine type (North Indian, South Indian, Chinese, etc.)", 
-            type=openapi.TYPE_STRING,
-            example='North Indian'
-        ),
-        openapi.Parameter(
-            'meal_type', 
-            openapi.IN_QUERY, 
-            description="Filter by meal type (breakfast, lunch, dinner, snacks, desserts)", 
-            type=openapi.TYPE_STRING,
-            example='dinner'
-        ),
-        openapi.Parameter(
-            'vegetarian', 
-            openapi.IN_QUERY, 
-            description="Filter by vegetarian preference (true/false)", 
-            type=openapi.TYPE_BOOLEAN,
-            example='true'
-        ),
-    ],
-    responses={
-        200: openapi.Response(
-            'List of available food items', 
-            examples={
-                'application/json': [
-                    {
-                        'id': 1,
-                        'chef': {
-                            'id': 2,
-                            'username': 'chef_rahul',
-                            'first_name': 'Rahul',
-                            'last_name': 'Kumar'
-                        },
-                        'name': 'Butter Chicken',
-                        'description': 'Tender chicken in rich, creamy tomato-based gravy with butter and cream',
-                        'cuisine_type': 'North Indian',
-                        'meal_type': 'dinner',
-                        'price': '250.00',
-                        'available_quantity': 5,
-                        'preparation_time': 45,
-                        'ingredients': 'Chicken, Butter, Cream, Tomatoes, Onions, Garlic, Ginger, Spices',
-                        'is_vegetarian': False,
-                        'is_available': True
-                    }
-                ]
-            }
-        )
-    }
+    tags=['Customers'],
+    operation_description="Search for available food items with advanced filtering."
 )
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -640,3 +566,75 @@ def search_food(request):
     
     serializer = FoodItemSerializer(food_items, many=True)
     return Response(serializer.data)
+
+@swagger_auto_schema(
+    method='post',
+    tags=['Customers'],
+    operation_description="Rate a customer (chef endpoint)."
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def rate_customer(request, order_id):
+    """Rate a customer (chef endpoint)"""
+    if request.user.role != 'chef':
+        return Response({'error': 'Only chefs can rate customers'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from orders.models import DailyMealOrder
+    order = get_object_or_404(DailyMealOrder, id=order_id, daily_meal__chef=request.user)
+    
+    # Check if order is delivered
+    if order.order_status != 'delivered':
+        return Response({'error': 'You can only rate customers for delivered orders'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if already rated
+    if CustomerRating.objects.filter(customer=order.customer, order=order).exists():
+        return Response({'error': 'You have already rated this customer for this order'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    rating = request.data.get('rating')
+    feedback = request.data.get('feedback', '')
+    
+    if not rating or int(rating) < 1 or int(rating) > 5:
+        return Response({'error': 'Rating must be between 1 and 5'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create rating
+    customer_rating = CustomerRating.objects.create(
+        customer=order.customer,
+        chef=request.user,
+        order=order,
+        rating=rating,
+        feedback=feedback
+    )
+    
+    return Response({'message': 'Customer rated successfully', 'rating': customer_rating.rating})
+
+@swagger_auto_schema(
+    method='get',
+    tags=['Customers'],
+    operation_description="Get ratings for the authenticated customer."
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_customer_ratings(request):
+    """Get ratings for the authenticated customer"""
+    if request.user.role != 'customer':
+        return Response({'error': 'Only customers can access their ratings'}, status=status.HTTP_403_FORBIDDEN)
+    
+    ratings = CustomerRating.objects.filter(customer=request.user).select_related('chef', 'order')
+    ratings_data = []
+    
+    for rating in ratings:
+        ratings_data.append({
+            'id': rating.id,
+            'chef': {
+                'id': rating.chef.id,
+                'username': rating.chef.username,
+                'first_name': rating.chef.first_name,
+                'last_name': rating.chef.last_name
+            },
+            'order_id': rating.order.order_id,
+            'rating': rating.rating,
+            'feedback': rating.feedback,
+            'created_at': rating.created_at
+        })
+    
+    return Response(ratings_data)

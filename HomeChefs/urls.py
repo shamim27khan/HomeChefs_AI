@@ -57,9 +57,7 @@ urlpatterns = [
     path('api/customers/', include('customers.urls')),
     path('api/orders/', include('orders.urls')),
     path('api/payments/', include('payments.urls')),
-    # MVP URLs
-    path('api/mvp/chefs/', include('chefs.urls_mvp')),
-    path('api/mvp/orders/', include('orders.urls_mvp')),
+    path('delivery/', include('delivery.urls')),
     path('test/', views.test_page, name='test_page'),
     # Frontend static files
     path('frontend/<path:path>', views.serve_frontend_file, name='serve_frontend_file'),

@@ -16,28 +16,75 @@
                         <p class="text-muted">Login to your HomeChefHub account</p>
                     </div>
 
-                    <form id="loginPageForm">
-                        <div class="mb-3">
-                            <label for="loginUsername" class="form-label">Username or Email</label>
-                            <input type="text" class="form-control" id="loginUsername" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="loginPassword" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="loginPassword" required>
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="rememberMe">
-                            <label class="form-check-label" for="rememberMe">
-                                Remember me
-                            </label>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-primary btn-lg" onclick="handlePageLogin()">
-                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                    <!-- Login Tabs -->
+                    <ul class="nav nav-pills mb-4" id="loginTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="password-tab" data-bs-toggle="pill" data-bs-target="#password-login" type="button" role="tab" aria-controls="password-login" aria-selected="true">
+                                <i class="fas fa-lock me-2"></i>Password
                             </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="otp-tab" data-bs-toggle="pill" data-bs-target="#otp-login" type="button" role="tab" aria-controls="otp-login" aria-selected="false">
+                                <i class="fas fa-mobile-alt me-2"></i>OTP
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="loginTabContent">
+                        <!-- Password Login -->
+                        <div class="tab-pane fade show active" id="password-login" role="tabpanel" aria-labelledby="password-tab">
+                            <form id="loginPageForm">
+                                <div class="mb-3">
+                                    <label for="loginUsername" class="form-label">Username or Email</label>
+                                    <input type="text" class="form-control" id="loginUsername" name="loginUsername" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginPassword" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="loginPassword" name="loginPassword" required>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="handlePageLogin()">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+
+                        <!-- OTP Login -->
+                        <div class="tab-pane fade" id="otp-login" role="tabpanel" aria-labelledby="otp-tab">
+                            <form id="otpLoginForm">
+                                <div class="mb-3">
+                                    <label for="loginPhoneNumber" class="form-label">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-mobile-alt"></i></span>
+                                        <input type="tel" class="form-control" id="loginPhoneNumber" name="loginPhoneNumber" placeholder="9876543210 (10 digits)">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="sendLoginOTP()" id="sendLoginOtpBtn">
+                                            Send OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="loginOtpStatus">Enter 10-digit phone number (no country code)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginOtpCode" class="form-label">Verification Code</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
+                                        <input type="text" class="form-control" id="loginOtpCode" name="loginOtpCode" placeholder="Enter 6-digit code" maxlength="6">
+                                        <button class="btn btn-primary" type="button" onclick="verifyLoginOTP()" id="verifyLoginOtpBtn">
+                                            Login with OTP
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="loginOtpVerifyStatus">Enter the OTP sent to your phone</div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     
                     <div class="text-center mt-4">
                         <p class="text-muted">
@@ -55,6 +102,8 @@
 
 {% block extra_js %}
 <script>
+// Force cache refresh
+console.log('Login page script loaded - v2.0');
 // Check authentication status on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Login page loaded, checking auth...');
@@ -124,9 +173,18 @@ async function handlePageLogin() {
             showAlert('Login successful! Redirecting...', 'success');
             form.reset();
             
-            // Redirect to home after successful login
+            // Role-based redirect after successful login
             setTimeout(() => {
-                window.location.href = '/';
+                const userRole = result.user.role;
+                if (userRole === 'delivery_partner') {
+                    window.location.href = '/delivery/dashboard/';
+                } else if (userRole === 'chef') {
+                    window.location.href = '/';
+                } else if (userRole === 'admin') {
+                    window.location.href = '/admin/';
+                } else {
+                    window.location.href = '/';
+                }
             }, 1500);
         } else {
             showAlert(result.non_field_errors ? result.non_field_errors.join(', ') : 'Invalid credentials', 'danger');
@@ -140,5 +198,174 @@ async function handlePageLogin() {
         submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
     }
 }
+
+// OTP Login Functions
+async function sendLoginOTP() {
+    const phoneNumber = document.getElementById('loginPhoneNumber').value.trim();
+    const statusEl = document.getElementById('loginOtpStatus');
+    const sendBtn = document.getElementById('sendLoginOtpBtn');
+    
+    if (!phoneNumber) {
+        statusEl.textContent = 'Please enter your phone number';
+        statusEl.className = 'form-text text-danger';
+        return;
+    }
+    
+    // Basic phone number validation (backend only accepts digits)
+    const cleanPhone = phoneNumber.replace(/\s/g, '').replace(/^\+/, '');
+    if (!/^[0-9]{10,15}$/.test(cleanPhone)) {
+        statusEl.textContent = 'Please enter a valid phone number (10-15 digits, no + symbol)';
+        statusEl.className = 'form-text text-danger';
+        return;
+    }
+    
+    // Use clean phone number for API call
+    phoneNumber = cleanPhone;
+    
+    try {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        const response = await fetch('/api/auth/request-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phone_number: phoneNumber })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            statusEl.textContent = 'OTP sent successfully! Please check your phone.';
+            statusEl.className = 'form-text text-success';
+            
+            // Enable OTP input
+            document.getElementById('loginOtpCode').disabled = false;
+            document.getElementById('verifyLoginOtpBtn').disabled = false;
+            
+            // Start countdown for resend
+            let countdown = 60;
+            const originalText = 'Send OTP'; // Define original text properly
+            sendBtn.disabled = true;
+            
+            const countdownInterval = setInterval(() => {
+                sendBtn.innerHTML = `Resend (${countdown}s)`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    sendBtn.innerHTML = originalText;
+                    sendBtn.disabled = false;
+                }
+            }, 1000);
+            
+        } else {
+            statusEl.textContent = result.message || 'Failed to send OTP';
+            statusEl.className = 'form-text text-danger';
+        }
+    } catch (error) {
+        console.error('Error sending OTP:', error);
+        statusEl.textContent = 'Network error. Please try again.';
+        statusEl.className = 'form-text text-danger';
+    } finally {
+        if (!sendBtn.innerHTML.includes('Resend')) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send OTP';
+        }
+    }
+}
+
+async function verifyLoginOTP() {
+    console.log('verifyLoginOTP called - v2.0');
+    const phoneNumber = document.getElementById('loginPhoneNumber').value.trim();
+    const otpCode = document.getElementById('loginOtpCode').value.trim();
+    const statusEl = document.getElementById('loginOtpVerifyStatus');
+    const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+    
+    console.log('Phone:', phoneNumber, 'OTP:', otpCode);
+    
+    if (!phoneNumber || !otpCode) {
+        statusEl.textContent = 'Please enter both phone number and OTP';
+        statusEl.className = 'form-text text-danger';
+        return;
+    }
+    
+    if (otpCode.length !== 6) {
+        statusEl.textContent = 'Please enter a 6-digit OTP';
+        statusEl.className = 'form-text text-danger';
+        return;
+    }
+    
+    try {
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        
+        const response = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                phone_number: phoneNumber,
+                otp_code: otpCode
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Store auth token and user data
+            localStorage.setItem('authToken', result.token);
+            localStorage.setItem('user', JSON.stringify(result.user));
+            
+            showAlert('Login successful! Redirecting...', 'success');
+            
+            // Reset form
+            document.getElementById('otpLoginForm').reset();
+            statusEl.textContent = 'Enter the OTP sent to your phone';
+            statusEl.className = 'form-text';
+            
+            // Role-based redirect after successful login
+            setTimeout(() => {
+                const userRole = result.user.role;
+                if (userRole === 'delivery_partner') {
+                    window.location.href = '/delivery/dashboard/';
+                } else if (userRole === 'chef') {
+                    window.location.href = '/';
+                } else if (userRole === 'admin') {
+                    window.location.href = '/admin/';
+                } else {
+                    window.location.href = '/';
+                }
+            }, 1500);
+        } else {
+            statusEl.textContent = result.message || 'Invalid OTP';
+            statusEl.className = 'form-text text-danger';
+        }
+    } catch (error) {
+        console.error('Error verifying OTP:', error);
+        statusEl.textContent = 'Network error. Please try again.';
+        statusEl.className = 'form-text text-danger';
+    } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = 'Login with OTP';
+    }
+}
+
+// Initialize OTP tab when clicked
+document.addEventListener('DOMContentLoaded', function() {
+    const otpTab = document.getElementById('otp-tab');
+    if (otpTab) {
+        otpTab.addEventListener('shown.bs.tab', function() {
+            // Reset OTP form when switching to OTP tab
+            document.getElementById('otpLoginForm').reset();
+            document.getElementById('loginOtpStatus').textContent = 'We\'ll send a verification code to this number';
+            document.getElementById('loginOtpStatus').className = 'form-text';
+            document.getElementById('loginOtpVerifyStatus').textContent = 'Enter the OTP sent to your phone';
+            document.getElementById('loginOtpVerifyStatus').className = 'form-text';
+        });
+    }
+});
 </script>
 {% endblock %}

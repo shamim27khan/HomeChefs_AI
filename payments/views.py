@@ -12,6 +12,7 @@ from drf_yasg import openapi
 
 @swagger_auto_schema(
     method='post',
+    tags=['Payments'],
     operation_description="Process payment for an order. Only customers can make payments.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -172,6 +173,11 @@ def payments(request):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@swagger_auto_schema(
+    method='get',
+    tags=['Payments'],
+    operation_description="Get payment details by payment ID."
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def payment_detail(request, payment_id):
@@ -188,6 +194,7 @@ def payment_detail(request, payment_id):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Payments'],
     operation_description="Add money to customer's wallet. Only customers can access this endpoint.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
@@ -281,6 +288,11 @@ def wallet(request):
         
         return Response({'message': f'Added {amount} to wallet', 'new_balance': wallet.balance})
 
+@swagger_auto_schema(
+    method='get',
+    tags=['Payments'],
+    operation_description="Get wallet transaction history."
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def wallet_transactions(request):
@@ -297,6 +309,7 @@ def wallet_transactions(request):
 
 @swagger_auto_schema(
     method='post',
+    tags=['Payments'],
     operation_description="Request a refund for a payment. Only customers can request refunds.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,

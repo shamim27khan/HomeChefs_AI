@@ -6,14 +6,19 @@ from .models import DailyMeal, ChefProfile, DailyEarning, CustomerReview, FoodIt
 class ChefProfileSerializer(serializers.ModelSerializer):
     """Simple chef profile serializer for MVP"""
     username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
     full_address = serializers.ReadOnlyField()
     
     class Meta:
         model = ChefProfile
         fields = [
-            'user', 'username', 'phone_number', 'address_line1', 'address_line2',
-            'area', 'city', 'pincode', 'cooking_experience', 'cuisine_specialties',
-            'is_verified', 'kitchen_type', 'full_address', 'created_at'
+            'user', 'username', 'first_name', 'last_name', 'full_name', 'email',
+            'phone_number', 'address_line1', 'address_line2', 'area', 'city', 'pincode',
+            'cooking_experience', 'cuisine_specialties', 'is_verified', 'kitchen_type',
+            'full_address', 'created_at'
         ]
         read_only_fields = ['user', 'is_verified', 'verification_date', 'created_at']
 
@@ -91,6 +96,40 @@ class CustomerReviewSerializer(serializers.ModelSerializer):
             'comment', 'created_at'
         ]
         read_only_fields = ['customer', 'created_at']
+
+class AdminChefSerializer(serializers.ModelSerializer):
+    """Complete chef information for admin dashboard"""
+    username = serializers.CharField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
+    email = serializers.CharField(read_only=True)
+    date_joined = serializers.DateTimeField(read_only=True)
+    chef_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 'date_joined', 'chef_info'
+        ]
+    
+    def get_chef_info(self, obj):
+        """Get chef profile information"""
+        try:
+            profile = obj.chefprofile
+            return {
+                'phone_number': profile.phone_number,
+                'area': profile.area,
+                'city': profile.city,
+                'full_address': profile.full_address,
+                'cuisine_specialties': profile.cuisine_specialties,
+                'cooking_experience': profile.cooking_experience,
+                'kitchen_type': profile.kitchen_type,
+                'is_verified': profile.is_verified,
+                'verification_date': profile.verification_date,
+                'average_rating': 0,  # TODO: Calculate from ratings
+            }
+        except ChefProfile.DoesNotExist:
+            return None
 
 class PublicChefSerializer(serializers.ModelSerializer):
     """Public chef information for customers"""

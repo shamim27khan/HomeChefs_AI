@@ -13,6 +13,11 @@
 ### **Admin Panel**
 - **Admin**: `http://localhost:8000/admin/`
 
+### **Delivery Partner App**
+- **Registration**: `http://localhost:8000/delivery/register/`
+- **Dashboard**: `http://localhost:8000/delivery/dashboard/`
+- **Profile**: `http://localhost:8000/delivery/profile/`
+
 ### **API Endpoints**
 - **Chefs**: `http://localhost:8000/api/chefs/public/`
 - **Food**: `http://localhost:8000/api/customers/search/food/`
@@ -45,6 +50,11 @@ The server should be running on: `http://localhost:8000`
 - **Test**: Open `frontend/test.html` directly in browser
 - **Original**: Open `frontend/index.html` directly in browser
 
+#### **Delivery Partner App**
+- **URL**: `http://localhost:8000/delivery/dashboard/`
+- **Features**: Delivery request management, tracking, earnings
+- **Access**: Login with delivery partner credentials, auto-redirect to dashboard
+
 ## 🔐 Login Credentials
 
 ### **Admin Access**
@@ -74,6 +84,23 @@ The server should be running on: `http://localhost:8000`
 - **Password**: `customer123`
 - **Role**: Customer
 
+### **Delivery Partner Accounts**
+- **Username**: `guddu`
+- **Password**: `delivery123`
+- **Role**: Delivery Partner (Verified)
+
+- **Username**: `test_delivery_partner`
+- **Password**: `delivery123`
+- **Role**: Delivery Partner (Verified)
+
+- **Username**: `delivery_partner_1`
+- **Password**: `delivery123`
+- **Role**: Delivery Partner (Pending verification)
+
+- **Username**: `delivery_partner_2`
+- **Password**: `delivery123`
+- **Role**: Delivery Partner (Pending verification)
+
 ## 📚 API Documentation
 
 ### **Swagger UI**
@@ -90,6 +117,13 @@ The server should be running on: `http://localhost:8000`
 - **URL**: `http://localhost:8000/admin/`
 - **Features**: Database management
 - **Login**: Use admin credentials
+
+### **Delivery Partner App**
+- **Registration**: `http://localhost:8000/delivery/register/`
+- **Dashboard**: `http://localhost:8000/delivery/dashboard/`
+- **Profile**: `http://localhost:8000/delivery/profile/`
+- **Features**: Accept delivery requests, track deliveries, manage availability
+- **Login**: Use main login page with delivery partner credentials
 
 ## 🛠️ Frontend Features
 
@@ -111,6 +145,16 @@ The server should be running on: `http://localhost:8000`
 - ✅ Browse food items
 - ✅ Rating system
 - ✅ Experience display
+
+### **Delivery Partner Features**
+- ✅ Registration with vehicle verification
+- ✅ Delivery dashboard with real-time requests
+- ✅ Accept/decline delivery requests
+- ✅ Track active deliveries
+- ✅ Update delivery status (picked up, in transit, delivered)
+- ✅ Availability toggle
+- ✅ Earnings and statistics tracking
+- ✅ Profile management
 
 ### **UI/UX Improvements**
 - ✅ Responsive design
@@ -171,6 +215,11 @@ If you encounter issues:
 2. Use the test frontend for debugging
 3. Verify API documentation
 4. Check browser console for errors
+
+### **Delivery Partner Support**
+- **Detailed Guide**: See `DELIVERY_PARTNER_ACCESS_GUIDE.md`
+- **User Manual**: See `DELIVERY_PARTNER_USER_MANUAL.md`
+- **Validation Guide**: See `DELIVERY_PARTNER_VALIDATION_GUIDE.md`
 
 ## 🎉 Success Indicators
 
