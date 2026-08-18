@@ -22,6 +22,11 @@ def home(request):
     # Show customer homepage for non-authenticated users or customers
     return render(request, 'HomeChefs/index_mvp.html')
 
+def chef_dashboard(request):
+    """Chef dashboard with meal management functionality"""
+    # Don't check Django session auth - rely on frontend token authentication
+    return render(request, 'HomeChefs/chef_dashboard.html')
+
 def customer_dashboard(request):
     """Customer dashboard with order functionality"""
     if not request.user.is_authenticated:

@@ -1461,14 +1461,6 @@
                 img.src = `https://picsum.photos/seed/${seed}/300/200.jpg`;
             });
             
-            // Don't update auth UI if we're on login page (user just logged out)
-            if (window.location.pathname === '/login/' || window.location.pathname === '/logout/') {
-                console.log('On login/logout page, skipping auth UI update');
-                localStorage.clear();
-                sessionStorage.clear();
-                return;
-            }
-            
             const token = localStorage.getItem('authToken');
             const userStr = localStorage.getItem('user');
             

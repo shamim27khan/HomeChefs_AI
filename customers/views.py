@@ -19,11 +19,7 @@ from drf_yasg import openapi
         type=openapi.TYPE_OBJECT,
         required=['chef_id'],
         properties={
-            'chef_id': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='ID of the chef to add to favorites',
-                example=2
-            )
+            'chef_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the chef to add to favorites')
         }
     ),
     responses={
@@ -124,11 +120,7 @@ def remove_favorite_chef(request, chef_id):
         type=openapi.TYPE_OBJECT,
         required=['food_item_id'],
         properties={
-            'food_item_id': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='ID of the food item to add to favorites',
-                example=1
-            )
+            'food_item_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the food item to add to favorites')
         }
     ),
     responses={
@@ -225,29 +217,7 @@ def remove_favorite_food(request, food_id):
     method='post',
     tags=['Customers'],
     operation_description="Create a food review. Only customers can access this endpoint.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['food_item', 'rating', 'comment'],
-        properties={
-            'food_item': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='ID of the food item to review',
-                example=1
-            ),
-            'rating': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Rating from 1 to 5',
-                minimum=1,
-                maximum=5,
-                example=5
-            ),
-            'comment': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Review comment',
-                example='Amazing butter chicken! Perfect blend of spices and tender meat.'
-            )
-        }
-    ),
+    request_body=FoodReviewCreateSerializer,
     responses={
         201: openapi.Response(
             description='Food review created successfully',
@@ -333,47 +303,7 @@ def food_reviews(request):
     method='post',
     tags=['Customers'],
     operation_description="Create a new delivery address. Only customers can access this endpoint.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['address_line1', 'city', 'state', 'postal_code'],
-        properties={
-            'address_line1': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Primary address line',
-                example='123 Main Street, Apartment 4B'
-            ),
-            'address_line2': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Secondary address line (optional)',
-                example='Near Central Park'
-            ),
-            'city': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='City name',
-                example='Mumbai'
-            ),
-            'state': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='State name',
-                example='Maharashtra'
-            ),
-            'postal_code': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Postal/ZIP code',
-                example='400001'
-            ),
-            'landmark': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Landmark for easier location (optional)',
-                example='Opposite City Mall'
-            ),
-            'is_default': openapi.Schema(
-                type=openapi.TYPE_BOOLEAN, 
-                description='Set as default delivery address',
-                example=True
-            )
-        }
-    ),
+    request_body=CustomerAddressSerializer,
     responses={
         201: openapi.Response(
             description='Address created successfully',
@@ -570,7 +500,15 @@ def search_food(request):
 @swagger_auto_schema(
     method='post',
     tags=['Customers'],
-    operation_description="Rate a customer (chef endpoint)."
+    operation_description="Rate a customer (chef endpoint).",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['rating'],
+        properties={
+            'rating': openapi.Schema(type=openapi.TYPE_INTEGER, description='Rating from 1 to 5', minimum=1, maximum=5),
+            'feedback': openapi.Schema(type=openapi.TYPE_STRING, description='Optional feedback about the customer')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])

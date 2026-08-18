@@ -14,23 +14,7 @@ from drf_yasg import openapi
     method='post',
     tags=['Payments'],
     operation_description="Process payment for an order. Only customers can make payments.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['order', 'payment_method'],
-        properties={
-            'order': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Order ID to pay for',
-                example=1
-            ),
-            'payment_method': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                enum=['credit_card', 'debit_card', 'upi', 'wallet', 'cash_on_delivery'], 
-                description='Payment method',
-                example='wallet'
-            )
-        }
-    ),
+    request_body=PaymentCreateSerializer,
     responses={
         201: openapi.Response(
             description='Payment processed successfully',
@@ -200,12 +184,7 @@ def payment_detail(request, payment_id):
         type=openapi.TYPE_OBJECT,
         required=['amount'],
         properties={
-            'amount': openapi.Schema(
-                type=openapi.TYPE_NUMBER, 
-                description='Amount to add to wallet (must be greater than 0)',
-                minimum=0.01,
-                example=500.00
-            )
+            'amount': openapi.Schema(type=openapi.TYPE_NUMBER, description='Amount to add to wallet (must be greater than 0)', minimum=0.01)
         }
     ),
     responses={
@@ -311,22 +290,7 @@ def wallet_transactions(request):
     method='post',
     tags=['Payments'],
     operation_description="Request a refund for a payment. Only customers can request refunds.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['payment', 'reason'],
-        properties={
-            'payment': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Payment ID to refund',
-                example=1
-            ),
-            'reason': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Reason for refund request',
-                example='Food quality was not as expected'
-            )
-        }
-    ),
+    request_body=RefundCreateSerializer,
     responses={
         201: openapi.Response(
             description='Refund request created successfully',

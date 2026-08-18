@@ -319,6 +319,9 @@ async function verifyLoginOTP() {
             localStorage.setItem('authToken', result.token);
             localStorage.setItem('user', JSON.stringify(result.user));
             
+            console.log('Login successful, user data:', result.user);
+            console.log('Redirecting based on role:', result.user.role);
+            
             showAlert('Login successful! Redirecting...', 'success');
             
             // Reset form
@@ -329,17 +332,20 @@ async function verifyLoginOTP() {
             // Role-based redirect after successful login
             setTimeout(() => {
                 const userRole = result.user.role;
+                console.log('Redirecting user with role:', userRole);
+                
                 if (userRole === 'delivery_partner') {
                     window.location.href = '/delivery/dashboard/';
                 } else if (userRole === 'chef') {
-                    window.location.href = '/';
+                    window.location.href = '/chef-dashboard/';
                 } else if (userRole === 'admin') {
-                    window.location.href = '/admin/';
+                    window.location.href = '/admin-dashboard/';
                 } else {
                     window.location.href = '/';
                 }
             }, 1500);
         } else {
+            console.error('OTP verification failed:', result);
             statusEl.textContent = result.message || 'Invalid OTP';
             statusEl.className = 'form-text text-danger';
         }

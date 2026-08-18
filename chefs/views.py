@@ -54,62 +54,7 @@ from drf_yasg import openapi
     method='post',
     tags=['Chefs'],
     operation_description="Create a new food item. Only chefs can access this endpoint.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['name', 'description', 'cuisine_type', 'meal_type', 'price', 'available_quantity', 'preparation_time', 'ingredients'],
-        properties={
-            'name': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Food item name',
-                example='Butter Chicken'
-            ),
-            'description': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Detailed description of the food item',
-                example='Tender chicken in rich, creamy tomato-based gravy with butter and cream'
-            ),
-            'cuisine_type': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Type of cuisine',
-                example='North Indian'
-            ),
-            'meal_type': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Meal type (breakfast, lunch, dinner, snacks, desserts)',
-                example='dinner'
-            ),
-            'price': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Price in rupees',
-                example='250.00'
-            ),
-            'available_quantity': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Number of portions available',
-                example=5
-            ),
-            'preparation_time': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Preparation time in minutes',
-                example=45
-            ),
-            'ingredients': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='List of ingredients',
-                example='Chicken, Butter, Cream, Tomatoes, Onions, Garlic, Ginger, Spices'
-            ),
-            'is_vegetarian': openapi.Schema(
-                type=openapi.TYPE_BOOLEAN, 
-                description='Whether the item is vegetarian',
-                example=False
-            ),
-            'is_available': openapi.Schema(
-                type=openapi.TYPE_BOOLEAN, 
-                description='Whether the item is currently available',
-                example=True
-            ),
-        }
-    ),
+    request_body=FoodItemCreateSerializer,
     responses={
         201: openapi.Response(
             description='Food item created successfully',
@@ -220,34 +165,7 @@ def food_item_detail(request, food_id):
     method='post',
     tags=['Chefs'],
     operation_description="Create a new food schedule for availability. Only chefs can access this endpoint.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['day_of_week', 'start_time', 'end_time'],
-        properties={
-            'day_of_week': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Day of week (0=Monday, 6=Sunday)',
-                minimum=0,
-                maximum=6,
-                example=1
-            ),
-            'start_time': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Start time in HH:MM format',
-                example='09:00'
-            ),
-            'end_time': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='End time in HH:MM format',
-                example='14:00'
-            ),
-            'is_available': openapi.Schema(
-                type=openapi.TYPE_BOOLEAN, 
-                description='Whether this schedule is active',
-                example=True
-            )
-        }
-    ),
+    request_body=FoodScheduleCreateSerializer,
     responses={
         201: openapi.Response(
             description='Food schedule created successfully',
@@ -411,7 +329,15 @@ def public_chef_detail(request, chef_id):
 @swagger_auto_schema(
     method='post',
     tags=['Chefs'],
-    operation_description="Rate a daily meal (customer endpoint)."
+    operation_description="Rate a daily meal (customer endpoint).",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['rating'],
+        properties={
+            'rating': openapi.Schema(type=openapi.TYPE_INTEGER, description='Rating from 1 to 5', minimum=1, maximum=5),
+            'comment': openapi.Schema(type=openapi.TYPE_STRING, description='Optional comment about the meal')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -476,8 +402,20 @@ def chef_daily_meals(request):
         return Response({'error': 'Only chefs can access this endpoint'}, status=status.HTTP_403_FORBIDDEN)
     
     if request.method == 'GET':
-        target_date = request.GET.get('date', date.today())
+        target_date = request.GET.get('date')
+        if target_date:
+            # Parse the date from string if provided
+            from datetime import datetime
+            try:
+                target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+            except ValueError:
+                target_date = date.today()
+        else:
+            target_date = date.today()
+        
+        print(f"DEBUG: Chef {request.user.username} requesting meals for date: {target_date}")
         meals = DailyMeal.objects.filter(chef=request.user, date=target_date)
+        print(f"DEBUG: Found {meals.count()} meals for date {target_date}")
         serializer = DailyMealSerializer(meals, many=True)
         return Response(serializer.data)
     
@@ -759,7 +697,15 @@ def customer_orders(request):
 @swagger_auto_schema(
     method='post',
     tags=['Chefs'],
-    operation_description="Customers can rate completed orders."
+    operation_description="Customers can rate completed orders.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['rating'],
+        properties={
+            'rating': openapi.Schema(type=openapi.TYPE_INTEGER, description='Rating from 1 to 5', minimum=1, maximum=5),
+            'feedback': openapi.Schema(type=openapi.TYPE_STRING, description='Optional feedback about the order')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -790,28 +736,47 @@ def customer_review(request, order_id):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'POST'])
+@swagger_auto_schema(
+    method='get',
+    tags=['Chefs'],
+    operation_description="Admin can view pending chefs for verification."
+)
+@api_view(['GET'])
 @permission_classes([permissions.IsAdminUser])
-def admin_chef_verification(request):
-    """Admin can verify chefs"""
-    if request.method == 'GET':
-        pending_chefs = ChefProfile.objects.filter(is_verified=False)
-        chefs = User.objects.filter(
-            role='chef',
-            chefprofile__in=pending_chefs
-        )
-        serializer = AdminChefSerializer(chefs, many=True)
-        return Response(serializer.data)
+def admin_pending_chefs(request):
+    """Admin can view pending chefs for verification"""
+    pending_chefs = ChefProfile.objects.filter(is_verified=False)
+    chefs = User.objects.filter(
+        role='chef',
+        chefprofile__in=pending_chefs
+    )
+    serializer = AdminChefSerializer(chefs, many=True)
+    return Response(serializer.data)
+
+@swagger_auto_schema(
+    method='post',
+    tags=['Chefs'],
+    operation_description="Admin can verify a chef by chef_id.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['chef_id'],
+        properties={
+            'chef_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the chef to verify')
+        }
+    )
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_verify_chef(request):
+    """Admin can verify a chef"""
+    chef_id = request.data.get('chef_id')
+    chef = get_object_or_404(User, id=chef_id, role='chef')
     
-    elif request.method == 'POST':
-        chef_id = request.data.get('chef_id')
-        chef = get_object_or_404(User, id=chef_id, role='chef')
-        
-        chef.chefprofile.is_verified = True
-        chef.chefprofile.verification_date = timezone.now()
-        chef.chefprofile.save()
-        
-        return Response({'message': f'Chef {chef.username} verified successfully'})
+    chef.chefprofile.is_verified = True
+    chef.chefprofile.verification_date = timezone.now()
+    chef.chefprofile.save()
+    
+    return Response({'message': f'Chef {chef.username} verified successfully'})
 
 @swagger_auto_schema(
     method='get',
@@ -1026,7 +991,13 @@ def my_meals(request):
 @swagger_auto_schema(
     method='post',
     tags=['Chefs'],
-    operation_description="Toggle meal active/inactive status."
+    operation_description="Toggle meal active/inactive status.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'is_active': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Set meal active status')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -1084,7 +1055,8 @@ def get_meal_detail(request, meal_id):
 @swagger_auto_schema(
     method='put',
     tags=['Chefs'],
-    operation_description="Update meal details."
+    operation_description="Update meal details.",
+    request_body=DailyMealCreateSerializer
 )
 @api_view(['PUT'])
 @permission_classes([permissions.IsAuthenticated])

@@ -317,13 +317,7 @@ def user_logout(request):
     method='put',
     tags=['Authentication'],
     operation_description="Update user profile information",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'user': openapi.Schema(type=openapi.TYPE_OBJECT, description='User data'),
-            'profile': openapi.Schema(type=openapi.TYPE_OBJECT, description='Role-specific profile data'),
-        }
-    ),
+    request_body=UserProfileSerializer,
     responses={200: openapi.Response('Profile updated'), 400: openapi.Response('Bad request'), 401: openapi.Response('Unauthorized')}
 )
 @api_view(['GET', 'PUT'])
@@ -388,7 +382,8 @@ def profile(request):
 @swagger_auto_schema(
     method='post',
     tags=['Authentication'],
-    operation_description="Request OTP for phone number verification."
+    operation_description="Request OTP for phone number verification.",
+    request_body=OTPRequestSerializer
 )
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
@@ -416,7 +411,8 @@ def request_otp(request):
 @swagger_auto_schema(
     method='post',
     tags=['Authentication'],
-    operation_description="Verify OTP code for phone number verification."
+    operation_description="Verify OTP code for phone number verification.",
+    request_body=OTPVerifySerializer
 )
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])

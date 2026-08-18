@@ -40,6 +40,7 @@ urlpatterns = [
     path('zomato/', views.index_zomato_style, name='index_zomato_style'),
     path('search/', views.search_page, name='search_page'),
     path('chef/', views.chef_detail, name='chef_detail'),
+    path('chef-dashboard/', views.chef_dashboard, name='chef_dashboard'),
     path('customer-dashboard/', views.customer_dashboard, name='customer_dashboard'),
     path('order-meal/<int:meal_id>/', views.order_meal, name='order_meal'),
     path('checkout/', views.checkout, name='checkout'),

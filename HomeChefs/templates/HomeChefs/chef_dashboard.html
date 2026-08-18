@@ -618,47 +618,44 @@
 
 {% block extra_js %}
 <script>
-// Check if user is being logged out
-const isLoggingOut = sessionStorage.getItem('isLoggingOut') === 'true';
-
 document.addEventListener('DOMContentLoaded', function() {
-    // If we're in the process of logging out, force redirect immediately
-    if (isLoggingOut) {
-        console.log('Detected logout in progress, forcing redirect to home...');
-        sessionStorage.removeItem('isLoggingOut');
-        window.location.href = '/';  // Use href instead of replace
+    console.log('Chef dashboard loaded');
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+        console.error('No auth token or user found, redirecting to login...');
+        window.location.href = '/login/';
         return;
     }
     
+    console.log('User authenticated:', JSON.parse(user).username);
     loadDashboardData();
 });
 
 async function loadDashboardData() {
-    try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            console.error('No auth token found, redirecting to home page...');
-            // Use a more direct redirect method
-            window.location.href = '/';
-            return;
-        }
-
-        console.log('Starting to load dashboard data...');
-        
-        // Load dashboard stats sequentially to avoid hanging
-        await loadTodayStats();
-        await loadRecentOrders();
-        await loadTodayMeals();
-        
-        console.log('Dashboard data loaded successfully');
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-    }
+    console.log('Starting to load dashboard data...');
+    
+    // Load each section independently to prevent cascading failures
+    loadTodayStats();
+    loadRecentOrders();
+    loadTodayMeals();
 }
 
 async function loadTodayStats() {
     try {
         const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token found');
+            document.getElementById('todayOrders').textContent = '0';
+            document.getElementById('activeMeals').textContent = '0';
+            document.getElementById('totalRevenue').textContent = '₹0';
+            document.getElementById('avgRating').textContent = '0.0';
+            return;
+        }
+        
         console.log('Loading chef stats...');
         const response = await fetch('/api/orders/daily/chef-stats/', {
             headers: {
@@ -676,17 +673,36 @@ async function loadTodayStats() {
             document.getElementById('avgRating').textContent = (stats.average_rating || 0).toFixed(1);
         } else {
             console.error('Chef stats failed:', response.status, response.statusText);
+            document.getElementById('todayOrders').textContent = '0';
+            document.getElementById('activeMeals').textContent = '0';
+            document.getElementById('totalRevenue').textContent = '₹0';
+            document.getElementById('avgRating').textContent = '0.0';
         }
     } catch (error) {
         console.error('Error loading stats:', error);
+        document.getElementById('todayOrders').textContent = '0';
+        document.getElementById('activeMeals').textContent = '0';
+        document.getElementById('totalRevenue').textContent = '₹0';
+        document.getElementById('avgRating').textContent = '0.0';
     }
 }
 
 async function loadRecentOrders() {
     try {
         const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token found');
+            document.getElementById('recentOrdersContainer').innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <p>No orders found</p>
+                </div>
+            `;
+            return;
+        }
+        
         console.log('Loading recent orders...');
-        const response = await fetch('/api/orders/daily/chef-orders/', {
+        const response = await fetch('/api/orders/daily/chef/', {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -699,6 +715,12 @@ async function loadRecentOrders() {
             displayRecentOrders(orders.slice(0, 5)); // Show only 5 recent orders
         } else {
             console.error('Recent orders failed:', response.status, response.statusText);
+            document.getElementById('recentOrdersContainer').innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <p>No orders found</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Error loading orders:', error);
@@ -713,9 +735,25 @@ async function loadRecentOrders() {
 
 async function loadTodayMeals() {
     try {
-        console.log('Loading today\'s meals...');
         const token = localStorage.getItem('authToken');
-        const response = await fetch('/api/chefs/dashboard/my-meals/', {
+        if (!token) {
+            console.error('No auth token found');
+            document.getElementById('todayMealsContainer').innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-utensils fa-2x mb-2"></i>
+                    <p>No meals for today</p>
+                </div>
+            `;
+            return;
+        }
+        
+        console.log('Loading today\'s meals...');
+        // Get today's date in YYYY-MM-DD format
+        const now = new Date();
+        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        console.log('Requesting meals for date:', localDate);
+        
+        const response = await fetch(`/api/chefs/dashboard/meals/?date=${localDate}`, {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -725,9 +763,18 @@ async function loadTodayMeals() {
         if (response.ok) {
             const meals = await response.json();
             console.log('Meals data received:', meals);
+            console.log('Number of meals:', meals.length);
             displayTodayMeals(meals);
         } else {
-            console.error('Failed to load meals:', response.status);
+            console.error('Failed to load meals:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            document.getElementById('todayMealsContainer').innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-utensils fa-2x mb-2"></i>
+                    <p>No meals for today</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Error loading meals:', error);

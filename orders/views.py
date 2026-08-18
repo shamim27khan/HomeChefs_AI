@@ -21,51 +21,7 @@ from drf_yasg import openapi
     method='post',
     tags=['Orders'],
     operation_description="Place a new food order. Only customers can place orders.",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['chef', 'items', 'delivery_address'],
-        properties={
-            'chef': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Chef ID to order from',
-                example=2
-            ),
-            'items': openapi.Schema(
-                type=openapi.TYPE_ARRAY, 
-                description='List of food items to order',
-                items=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'food_item': openapi.Schema(
-                            type=openapi.TYPE_INTEGER,
-                            description='Food item ID',
-                            example=1
-                        ),
-                        'quantity': openapi.Schema(
-                            type=openapi.TYPE_INTEGER,
-                            description='Quantity to order',
-                            minimum=1,
-                            example=2
-                        )
-                    }
-                ),
-                example=[
-                    {'food_item': 1, 'quantity': 2},
-                    {'food_item': 3, 'quantity': 1}
-                ]
-            ),
-            'delivery_address': openapi.Schema(
-                type=openapi.TYPE_INTEGER, 
-                description='Delivery address ID from customer addresses',
-                example=1
-            ),
-            'special_instructions': openapi.Schema(
-                type=openapi.TYPE_STRING, 
-                description='Special cooking or delivery instructions (optional)',
-                example='Extra spicy, no onions please'
-            )
-        }
-    ),
+    request_body=OrderCreateSerializer,
     responses={
         201: openapi.Response(
             description='Order placed successfully',
@@ -321,7 +277,8 @@ def customer_orders(request):
 @swagger_auto_schema(
     method='post',
     tags=['Orders'],
-    operation_description="Create a new daily meal order. Only customers can place orders."
+    operation_description="Create a new daily meal order. Only customers can place orders.",
+    request_body=DailyMealOrderCreateSerializer
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -506,7 +463,13 @@ def daily_meal_chef_orders(request):
 @swagger_auto_schema(
     method='post',
     tags=['Orders'],
-    operation_description="Chef can confirm a pending daily meal order."
+    operation_description="Chef can confirm a pending daily meal order.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'estimated_ready_time': openapi.Schema(type=openapi.TYPE_STRING, description='Estimated ready time in minutes (optional)')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -572,7 +535,13 @@ def daily_meal_chef_stats(request):
 @swagger_auto_schema(
     method='post',
     tags=['Orders'],
-    operation_description="Mark a daily meal order as delivered."
+    operation_description="Mark a daily meal order as delivered.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'delivery_notes': openapi.Schema(type=openapi.TYPE_STRING, description='Optional delivery notes')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -649,7 +618,15 @@ def daily_meal_chef_order_summary(request):
 @swagger_auto_schema(
     method='post',
     tags=['Orders'],
-    operation_description="Rate a completed daily meal order (customers only)."
+    operation_description="Rate a completed daily meal order (customers only).",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['rating'],
+        properties={
+            'rating': openapi.Schema(type=openapi.TYPE_INTEGER, description='Rating from 1 to 5', minimum=1, maximum=5),
+            'feedback': openapi.Schema(type=openapi.TYPE_STRING, description='Optional feedback about the order')
+        }
+    )
 )
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
