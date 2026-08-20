@@ -18,7 +18,7 @@
     <!-- Order Stats -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" onclick="filterOrders('all')" style="cursor: pointer;">
                 <div class="card-body">
                     <h5 class="text-primary" id="totalOrders">0</h5>
                     <small class="text-muted">Total Orders</small>
@@ -26,7 +26,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" onclick="filterOrders('pending')" style="cursor: pointer;">
                 <div class="card-body">
                     <h5 class="text-warning" id="pendingOrders">0</h5>
                     <small class="text-muted">Pending</small>
@@ -34,7 +34,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" onclick="filterOrders('preparing')" style="cursor: pointer;">
                 <div class="card-body">
                     <h5 class="text-info" id="preparingOrders">0</h5>
                     <small class="text-muted">Preparing</small>
@@ -42,7 +42,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
+            <div class="card text-center" onclick="filterOrders('completed')" style="cursor: pointer;">
                 <div class="card-body">
                     <h5 class="text-success" id="completedOrders">0</h5>
                     <small class="text-muted">Completed</small>
@@ -134,6 +134,7 @@
 {% block extra_js %}
 <script>
 let allOrders = [];
+let currentFilter = 'all';
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('My Orders page loaded');
@@ -204,7 +205,17 @@ function displayOrders() {
     const sortedOrders = [...allOrders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
     // Display all orders
-    allOrdersList.innerHTML = sortedOrders.map(order => createOrderCard(order)).join('');
+    let filteredOrders = sortedOrders;
+    if (currentFilter === 'pending') {
+        filteredOrders = sortedOrders.filter(order => order.order_status === 'pending');
+    } else if (currentFilter === 'preparing') {
+        filteredOrders = sortedOrders.filter(order => ['confirmed', 'preparing', 'ready'].includes(order.order_status));
+    } else if (currentFilter === 'completed') {
+        filteredOrders = sortedOrders.filter(order => order.order_status === 'delivered');
+    }
+    allOrdersList.innerHTML = filteredOrders.length > 0
+        ? filteredOrders.map(order => createOrderCard(order)).join('')
+        : '<p class="text-muted text-center">No matching orders</p>';
     
     // Display active orders
     const activeOrders = sortedOrders.filter(order => 
@@ -316,6 +327,16 @@ function updateOrderStats() {
     document.getElementById('pendingOrders').textContent = stats.pending;
     document.getElementById('preparingOrders').textContent = stats.preparing;
     document.getElementById('completedOrders').textContent = stats.completed;
+}
+
+function filterOrders(filter) {
+    currentFilter = filter;
+    const allOrdersTab = document.querySelector('a[href="#allOrders"]');
+    if (allOrdersTab) {
+        const tab = new bootstrap.Tab(allOrdersTab);
+        tab.show();
+    }
+    displayOrders();
 }
 
 async function viewOrderDetails(orderId) {
@@ -550,16 +571,7 @@ async function submitRating(orderId) {
     const token = localStorage.getItem('authToken');
     
     try {
-        // Get the meal ID from the order
-        const orderResponse = await fetch(`/api/orders/daily/${orderId}/`, {
-            headers: {
-                'Authorization': `Token ${token}`
-            }
-        });
-        const orderData = await orderResponse.json();
-        
-        // Rate the meal using the new API
-        const response = await fetch(`/api/chefs/rate-meal/${orderData.daily_meal}/`, {
+        const response = await fetch(`/api/orders/daily/${orderId}/rate/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -567,7 +579,7 @@ async function submitRating(orderId) {
             },
             body: JSON.stringify({
                 rating: parseInt(rating),
-                comment: feedback
+                feedback: feedback
             })
         });
         

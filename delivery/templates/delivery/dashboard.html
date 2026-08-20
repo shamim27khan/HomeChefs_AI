@@ -1,0 +1,629 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Dashboard - HomeChefs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Open Sans', sans-serif; }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script>window.HC_AUTH_TOKEN = '{{ auth_token }}';</script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}"><img src="{% static 'hch.jpg' %}" alt="HomeChefs" height="40"></a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'delivery:profile' %}">Profile</a>
+                <a class="nav-link" href="/logout/">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ partner.user.username }}</h5>
+                        <p class="text-muted">Delivery Partner</p>
+                        
+                        <div class="mb-3">
+                            {% if partner.is_available %}
+                                <span class="badge bg-success">
+                                    Available
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    Unavailable
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="list-group">
+                            <a href="{% url 'delivery:dashboard' %}" class="list-group-item list-group-item-action active">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                            <a href="{% url 'delivery:profile' %}" class="list-group-item list-group-item-action">
+                                <i class="bi bi-person"></i> Profile
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="showHistory()">
+                                <i class="bi bi-clock-history"></i> History
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="showStats()">
+                                <i class="bi bi-graph-up"></i> Statistics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Active</h5>
+                                <h3>{{ active_deliveries|length }}</h3>
+                                <small>Deliveries</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Today</h5>
+                                <h3>{{ today_completed|length }}</h3>
+                                <small>Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Pending</h5>
+                                <h3>{{ pending_requests|length }}</h3>
+                                <small>Requests</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Earnings</h5>
+                                <h3>Rs. {{ total_earnings|floatformat:2 }}</h3>
+                                <small>Today</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Availability Toggle -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Availability Status</h5>
+                                <p class="text-muted mb-0">Toggle your availability to receive delivery requests</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="availabilityToggle" 
+                                       {% if partner.is_available %}checked{% endif %}>
+                                <label class="form-check-label" for="availabilityToggle">
+                                    {% if partner.is_available %}Available{% else %}Unavailable{% endif %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Requests -->
+                {% if pending_requests %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Pending Delivery Requests</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="pendingRequests">
+                            {% for request in pending_requests %}
+                            <div class="border rounded p-3 mb-3" data-request-id="{{ request.id }}">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6>Order #{{ request.order.order_id }}</h6>
+                                        <p class="mb-1"><strong>{{ request.order.daily_meal.main_dish }}</strong> - {{ request.order.portions }} portions</p>
+                                        <p class="mb-1">Customer: {{ request.order.customer.username }}</p>
+                                        <p class="mb-1">Distance: {{ request.distance_km }} km | Fee: Rs. {{ request.delivery_fee }}</p>
+                                        <p class="mb-1 text-muted">Expires in: <span class="expiry-timer" data-expires="{{ request.expires_at|date:'U' }}"></span></p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-success mb-2 accept-btn" data-request-id="{{ request.id }}">
+                                            <i class="bi bi-check-circle"></i> Accept
+                                        </button>
+                                        <br>
+                                        <button class="btn btn-outline-danger decline-btn" data-request-id="{{ request.id }}">
+                                            <i class="bi bi-x-circle"></i> Decline
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Active Deliveries -->
+                {% if active_deliveries %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Active Deliveries</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for delivery in active_deliveries %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6>Order #{{ delivery.order.order_id }}</h6>
+                                    <p class="mb-1"><strong>{{ delivery.order.daily_meal.main_dish }}</strong></p>
+                                    <p class="mb-1">Status: 
+                                    {% if delivery.status == 'assigned' %}
+                                        <span class="badge bg-info">{{ delivery.get_status_display }}</span>
+                                    {% elif delivery.status == 'picked_up' %}
+                                        <span class="badge bg-warning">{{ delivery.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">{{ delivery.get_status_display }}</span>
+                                    {% endif %}
+                                </p>
+                                    <p class="mb-1">Customer: {{ delivery.order.customer.username }}</p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button class="btn btn-primary mb-2" onclick="showDeliveryDetails({{ delivery.id }})">
+                                        <i class="bi bi-info-circle"></i> Details
+                                    </button>
+                                    <br>
+                                    {% if delivery.status == 'assigned' %}
+                                    <button class="btn btn-success mb-2" onclick="updateStatus({{ delivery.id }}, 'picked_up')">
+                                        <i class="bi bi-box-seam"></i> Picked Up
+                                    </button>
+                                    {% elif delivery.status == 'picked_up' %}
+                                    <button class="btn btn-warning mb-2" onclick="updateStatus({{ delivery.id }}, 'in_transit')">
+                                        <i class="bi bi-truck"></i> In Transit
+                                    </button>
+                                    {% elif delivery.status == 'in_transit' %}
+                                    <button class="btn btn-success" onclick="updateStatus({{ delivery.id }}, 'delivered')">
+                                        <i class="bi bi-check-circle"></i> Delivered
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Available Ready Orders -->
+                {% if available_orders %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Ready Orders to Accept</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="availableOrders">
+                            {% for order in available_orders %}
+                            <div class="border rounded p-3 mb-3" data-order-id="{{ order.id }}">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6>Order #{{ order.order_id }}</h6>
+                                        <p class="mb-1"><strong>{{ order.daily_meal.main_dish }}</strong> - {{ order.portions }} portions</p>
+                                        <p class="mb-1">Customer: {{ order.customer.username }}</p>
+                                        <p class="mb-1">Pickup: {{ order.daily_meal.chef.chef_profile.kitchen_address }}</p>
+                                        <p class="mb-1">Deliver to: {{ order.delivery_address }}</p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-success accept-order-btn" data-order-id="{{ order.id }}">
+                                            <i class="bi bi-check-circle"></i> Accept
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Empty State -->
+                {% if not pending_requests and not active_deliveries and not available_orders %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">No Active Deliveries</h5>
+                        <p class="text-muted">You'll see delivery requests here when orders are ready for pickup in your area.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Details Modal -->
+    <div class="modal fade" id="deliveryDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delivery Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="deliveryDetailsContent">
+                    <!-- Content will be loaded via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delivery History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="historyContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="modal fade" id="statsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Performance Statistics</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="statsContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle availability
+        document.getElementById('availabilityToggle').addEventListener('change', function() {
+            fetch('/delivery/api/toggle-availability/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                location.reload();
+            });
+        });
+
+        // Accept delivery request
+        document.querySelectorAll('.accept-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const requestId = this.dataset.requestId;
+                fetch(`/delivery/api/requests/${requestId}/accept/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                });
+            });
+        });
+
+        // Decline delivery request
+        document.querySelectorAll('.decline-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const requestId = this.dataset.requestId;
+                fetch(`/delivery/api/requests/${requestId}/decline/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                });
+            });
+        });
+
+        // Update delivery status
+        function updateStatus(assignmentId, status) {
+            if (status === 'delivered') {
+                const notes = prompt('Any delivery notes? (optional)');
+                fetch(`/delivery/api/delivery/${assignmentId}/status/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: status, notes: notes })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                });
+            } else {
+                fetch(`/delivery/api/delivery/${assignmentId}/status/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: status })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                });
+            }
+        }
+
+        // Show delivery details
+        function showDeliveryDetails(assignmentId) {
+            fetch(`/delivery/api/delivery/${assignmentId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const content = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Pickup Details</h6>
+                            <p><strong>Chef:</strong> ${data.pickup_details.name}</p>
+                            <p><strong>Phone:</strong> ${data.pickup_details.phone}</p>
+                            <p><strong>Address:</strong> ${data.pickup_details.address}</p>
+                            <p><strong>Order:</strong> ${data.pickup_details.order_details.meal_name} (${data.pickup_details.order_details.portions} portions)</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Delivery Details</h6>
+                            <p><strong>Customer:</strong> ${data.delivery_details.name}</p>
+                            <p><strong>Phone:</strong> ${data.delivery_details.phone}</p>
+                            <p><strong>Address:</strong> ${data.delivery_details.address}</p>
+                            <p><strong>Total Amount:</strong> Rs. ${data.delivery_details.order_details.total_amount}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Delivery Fee:</strong> Rs. ${data.delivery_fee}</p>
+                            <p><strong>Your Earnings:</strong> Rs. ${data.partner_earnings}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Est. Pickup:</strong> ${new Date(data.estimated_pickup_time).toLocaleString()}</p>
+                            <p><strong>Est. Delivery:</strong> ${new Date(data.estimated_delivery_time).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('deliveryDetailsContent').innerHTML = content;
+                new bootstrap.Modal(document.getElementById('deliveryDetailsModal')).show();
+            });
+        }
+
+        // Update expiry timers
+        function updateExpiryTimers() {
+            document.querySelectorAll('.expiry-timer').forEach(timer => {
+                const expires = parseInt(timer.dataset.expires);
+                const now = Math.floor(Date.now() / 1000);
+                const remaining = expires - now;
+                
+                if (remaining <= 0) {
+                    timer.textContent = 'Expired';
+                    timer.closest('.border').style.opacity = '0.5';
+                } else {
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+                    timer.textContent = `${minutes}m ${seconds}s`;
+                }
+            });
+        }
+
+        // Update timers every second
+        setInterval(updateExpiryTimers, 1000);
+        updateExpiryTimers();
+
+        // Show delivery history
+        function showHistory() {
+            const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+            modal.show();
+            
+            fetch('/delivery/api/history/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        document.getElementById('historyContent').innerHTML = `
+                            <div class="text-center">
+                                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">No Delivery History</h5>
+                                <p class="text-muted">You haven't completed any deliveries yet.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let html = '<div class="table-responsive"><table class="table table-striped">';
+                    html += '<thead><tr><th>Order ID</th><th>Customer</th><th>Meal</th><th>Status</th><th>Fee</th><th>Earnings</th><th>Date</th></tr></thead><tbody>';
+                    
+                    data.forEach(delivery => {
+                        const statusClass = delivery.status === 'delivered' ? 'success' : 
+                                          delivery.status === 'failed' ? 'danger' : 'warning';
+                        html += `
+                            <tr>
+                                <td>${delivery.order_id}</td>
+                                <td>${delivery.customer_name}</td>
+                                <td>${delivery.meal_name}</td>
+                                <td><span class="badge bg-${statusClass}">${delivery.status}</span></td>
+                                <td>Rs. ${delivery.delivery_fee}</td>
+                                <td>Rs. ${delivery.partner_earnings}</td>
+                                <td>${new Date(delivery.created_at).toLocaleDateString()}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    document.getElementById('historyContent').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('historyContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            Error loading delivery history: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+
+        // Show statistics
+        function showStats() {
+            const modal = new bootstrap.Modal(document.getElementById('statsModal'));
+            modal.show();
+            
+            fetch('/delivery/api/stats/')
+                .then(response => response.json())
+                .then(data => {
+                    const html = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Overall Performance</h6>
+                                        <p><strong>Total Deliveries:</strong> ${data.total_deliveries}</p>
+                                        <p><strong>Completed Deliveries:</strong> ${data.completed_deliveries}</p>
+                                        <p><strong>Completion Rate:</strong> ${data.completion_rate}%</p>
+                                        <p><strong>Average Rating:</strong> ${data.average_rating}/5</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Earnings</h6>
+                                        <p><strong>Total Earnings:</strong> Rs. ${data.total_earnings}</p>
+                                        <p><strong>Today's Deliveries:</strong> ${data.today_deliveries}</p>
+                                        <p><strong>Today's Earnings:</strong> Rs. ${data.today_earnings}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">This Month</h6>
+                                        <p><strong>Monthly Deliveries:</strong> ${data.month_deliveries}</p>
+                                        <p><strong>Monthly Earnings:</strong> Rs. ${data.month_earnings}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Current Status</h6>
+                                        <p><strong>Status:</strong> ${data.current_status}</p>
+                                        <p><strong>Available:</strong> ${data.is_available ? 'Yes' : 'No'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('statsContent').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('statsContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            Error loading statistics: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+
+        // Accept available ready order
+        document.querySelectorAll('.accept-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.dataset.orderId;
+                acceptAvailableOrder(orderId);
+            });
+        });
+
+        function acceptAvailableOrder(orderId) {
+            fetch(`/delivery/api/available-orders/${orderId}/accept/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            });
+        }
+
+        // CSRF token helper
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

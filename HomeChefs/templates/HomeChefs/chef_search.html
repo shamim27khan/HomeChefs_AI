@@ -1,0 +1,128 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Chef Search - HomeChefHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h3><i class="fas fa-search me-2"></i>Chef Search Results</h3>
+            <p class="text-muted">Searching for chefs matching: <strong>{{ query|default:"" }}</strong></p>
+        </div>
+    </div>
+    
+    <div class="row" id="searchResults">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <div class="spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <p class="mt-2">Searching for chefs...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+    
+    if (query) {
+        // Fetch chef search results from API
+        fetch(`/api/chefs/public/?search=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Chef search results:', data);
+                
+                const resultsContainer = document.getElementById('searchResults');
+                
+                if (data && data.length > 0) {
+                    // Display chef search results
+                    let resultsHTML = '<div class="row">';
+                    data.forEach(chef => {
+                        resultsHTML += `
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <img src="https://picsum.photos/seed/chef${chef.id}/80/80.jpg" 
+                                                 alt="${chef.username}" class="chef-avatar me-3">
+                                            <div>
+                                                <h5>${chef.username}</h5>
+                                                <p class="text-muted mb-1">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    ${chef.area || 'Location not specified'}
+                                                </p>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="star-rating-display me-2">
+                                                        ${generateStars(chef.average_rating || 0)}
+                                                    </div>
+                                                    <span class="verified-badge">
+                                                        <i class="fas fa-check-circle me-1"></i>Verified Chef
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <h6>${chef.cuisine_specialties || 'Various Cuisines'}</h6>
+                                            <p class="text-muted">${chef.cooking_experience || 5}+ years experience</p>
+                                            <a href="/chef/?chef_id=${chef.id}" class="btn btn-primary">View Profile</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultsHTML += '</div>';
+                    resultsContainer.innerHTML = resultsHTML;
+                } else {
+                    // Show no results message
+                    resultsContainer.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h5>No chefs found for "${query}"</h5>
+                                <p>Try searching with different keywords or browse all chefs.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error searching chefs:', error);
+                const resultsContainer = document.getElementById('searchResults');
+                resultsContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <h5>Search Error</h5>
+                            <p>Unable to search chefs. Please try again later.</p>
+                        </div>
+                    </div>
+                `;
+            });
+    }
+});
+
+// Generate star rating HTML
+function generateStars(rating) {
+    const fullStars = 5;
+    const filledStars = Math.round(rating);
+    const emptyStars = fullStars - filledStars;
+    
+    let starsHTML = '';
+    for (let i = 1; i <= fullStars; i++) {
+        starsHTML += '<i class="fas fa-star text-warning"></i>';
+    }
+    for (let i = 1; i <= emptyStars; i++) {
+        starsHTML += '<i class="far fa-star text-muted"></i>';
+    }
+    
+    return starsHTML;
+}
+</script>
+{% endblock %}

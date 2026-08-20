@@ -670,7 +670,9 @@ async function loadTodayStats() {
         }
         
         console.log('Loading chef stats...');
-        const response = await fetch('/api/orders/daily/chef-stats/', {
+        const now = new Date();
+        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const response = await fetch(`/api/orders/daily/chef/stats/?date=${localDate}`, {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -1232,7 +1234,7 @@ async function loadAnalytics() {
         const period = document.getElementById('analyticsPeriod').value;
         const type = document.getElementById('analyticsType').value;
         
-        const response = await fetch(`/api/orders/daily/chef-stats/?period=${period}&type=${type}`, {
+        const response = await fetch(`/api/orders/daily/chef/stats/?period=${period}&type=${type}`, {
             headers: {
                 'Authorization': `Token ${token}`
             }
@@ -1283,8 +1285,12 @@ function displayAnalytics(data) {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Simple bar chart for orders
-        const maxValue = Math.max(...data.daily_data.map(d => d.orders));
+        // Choose value field based on selected analytics type
+        const type = document.getElementById('analyticsType').value || 'orders';
+        const valueKey = type === 'revenue' ? 'revenue' : 'orders';
+        
+        // Simple bar chart
+        const maxValue = Math.max(...data.daily_data.map(d => d[valueKey] || 0)) || 1;
         const barWidth = canvas.width / data.daily_data.length;
         const chartHeight = canvas.height - 40;
         
@@ -1293,7 +1299,8 @@ function displayAnalytics(data) {
         ctx.font = '10px Arial';
         
         data.daily_data.forEach((day, index) => {
-            const barHeight = (day.orders / maxValue) * chartHeight;
+            const value = day[valueKey] || 0;
+            const barHeight = (value / maxValue) * chartHeight;
             const x = index * barWidth;
             const y = canvas.height - barHeight - 20;
             
@@ -1301,9 +1308,9 @@ function displayAnalytics(data) {
             ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
             
             // Draw value on top of bar (for non-zero values)
-            if (day.orders > 0) {
+            if (value > 0) {
                 ctx.fillStyle = '#000';
-                ctx.fillText(day.orders.toString(), x + barWidth/2 - 5, y - 5);
+                ctx.fillText(value.toString(), x + barWidth/2 - 5, y - 5);
                 ctx.fillStyle = '#007bff';
             }
         });
@@ -1714,7 +1721,7 @@ async function submitCustomerRating() {
     const token = localStorage.getItem('authToken');
     
     try {
-        const response = await fetch(`/api/customers/rate-customer/${currentOrderId}/`, {
+        const response = await fetch(`/api/customers/rate/${currentOrderId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

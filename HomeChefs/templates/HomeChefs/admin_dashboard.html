@@ -1,0 +1,729 @@
+{% extends 'HomeChefs/base.html' %}
+
+{% block title %}Admin Dashboard - HomeChefs{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-user-shield me-2"></i>Admin Dashboard
+            </h1>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Chefs</h5>
+                    <h2 id="totalChefs">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Verified Chefs</h5>
+                    <h2 id="verifiedChefs">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Verification</h5>
+                    <h2 id="pendingChefs">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Customers</h5>
+                    <h2 id="totalCustomers">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Delivery Partners</h5>
+                    <h2 id="totalDeliveryPartners">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Verified Delivery</h5>
+                    <h2 id="verifiedDeliveryPartners">-</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Metrics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-day me-2"></i>Today's Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Meals Posted:</strong> <span id="todayMeals">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Orders Received:</strong> <span id="todayOrders">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Revenue:</strong> ₹<span id="todayRevenue">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Platform Commission:</strong> ₹<span id="todayCommission">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chef Verification Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-user-check me-2"></i>Chef Verification</h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadPendingChefs()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary active" onclick="showPendingChefs()">
+                                Pending Verification (<span id="pendingCount">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="showAllChefs()">
+                                All Chefs
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="chefVerificationContent">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading chef verification data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Delivery Partner Management Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-motorcycle me-2"></i>Delivery Partner Management</h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadDeliveryPartners()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary active" onclick="showAllDeliveryPartners()">
+                                All Partners
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="showPendingDeliveryPartners()">
+                                Pending Verification (<span id="pendingDeliveryCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="deliveryPartnerContent">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading delivery partner data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chef Detail Modal -->
+<div class="modal fade" id="chefDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chef Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="chefDetailContent">
+                <!-- Chef details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="verifyChefBtn" onclick="verifyChef()">
+                    <i class="fas fa-check me-1"></i>Verify Chef
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Partner Detail Modal -->
+<div class="modal fade" id="deliveryPartnerDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delivery Partner Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deliveryPartnerDetailContent">
+                <!-- Delivery partner details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="verifyPartnerBtn" onclick="verifyDeliveryPartnerFromModal()">
+                    <i class="fas fa-check me-1"></i>Verify Partner
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentChefId = null;
+let currentDeliveryPartnerId = null;
+let currentView = 'pending';
+
+// Load dashboard data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    loadPendingChefs();
+    loadDeliveryPartners();
+});
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/api/chefs/admin/dashboard/');
+        const data = await response.json();
+        
+        // Update overview cards
+        document.getElementById('totalChefs').textContent = data.overview.total_chefs;
+        document.getElementById('verifiedChefs').textContent = data.overview.verified_chefs;
+        document.getElementById('pendingChefs').textContent = data.overview.total_chefs - data.overview.verified_chefs;
+        document.getElementById('totalCustomers').textContent = data.overview.total_customers;
+        document.getElementById('totalDeliveryPartners').textContent = data.overview.total_delivery_partners;
+        document.getElementById('verifiedDeliveryPartners').textContent = data.overview.verified_delivery_partners;
+        
+        // Update today's metrics
+        document.getElementById('todayMeals').textContent = data.today.meals_posted;
+        document.getElementById('todayOrders').textContent = data.today.orders_received;
+        document.getElementById('todayRevenue').textContent = data.today.revenue;
+        document.getElementById('todayCommission').textContent = data.today.platform_commission;
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        showAlert('Error loading dashboard data', 'danger');
+    }
+}
+
+async function loadPendingChefs() {
+    try {
+        const response = await fetch('/api/chefs/admin/pending-chefs/');
+        const chefs = await response.json();
+        
+        document.getElementById('pendingCount').textContent = chefs.length;
+        displayChefs(chefs);
+        
+    } catch (error) {
+        console.error('Error loading pending chefs:', error);
+        document.getElementById('chefVerificationContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error loading pending chefs: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function loadAllChefs() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/chefs/admin/chefs/', {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const chefs = await response.json();
+        displayChefs(chefs);
+        
+    } catch (error) {
+        console.error('Error loading all chefs:', error);
+        document.getElementById('chefVerificationContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error loading chefs: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displayChefs(chefs) {
+    const content = document.getElementById('chefVerificationContent');
+    
+    if (chefs.length === 0) {
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                <h5>No chefs pending verification</h5>
+                <p class="text-muted">All chefs have been verified!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    chefs.forEach(chef => {
+        const verificationStatus = chef.chef_info ? 
+            (chef.chef_info.is_verified ? 
+                '<span class="badge bg-success">Verified</span>' : 
+                '<span class="badge bg-warning">Pending</span>') : 
+            '<span class="badge bg-secondary">No Profile</span>';
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0">${chef.first_name} ${chef.last_name}</h6>
+                            ${verificationStatus}
+                        </div>
+                        <p class="card-text">
+                            <small class="text-muted">@${chef.username}</small><br>
+                            ${chef.email}<br>
+                            ${chef.chef_info ? chef.chef_info.area + ', ' + chef.chef_info.city : 'No location info'}
+                        </p>
+                        ${chef.chef_info ? `
+                            <p class="card-text">
+                                <small>
+                                    <strong>Cuisines:</strong> ${chef.chef_info.cuisine_specialties}<br>
+                                    <strong>Experience:</strong> ${chef.chef_info.cooking_experience} years
+                                </small>
+                            </p>
+                        ` : ''}
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewChefDetails(${chef.id})">
+                                <i class="fas fa-eye me-1"></i>View Details
+                            </button>
+                            ${!chef.chef_info || !chef.chef_info.is_verified ? `
+                                <button class="btn btn-sm btn-success" onclick="quickVerifyChef(${chef.id})">
+                                    <i class="fas fa-check me-1"></i>Verify
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    content.innerHTML = html;
+}
+
+function showPendingChefs() {
+    currentView = 'pending';
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    loadPendingChefs();
+}
+
+function showAllChefs() {
+    currentView = 'all';
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    loadAllChefs();
+}
+
+async function viewChefDetails(chefId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/api/chefs/admin/chefs/`, {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const chefs = await response.json();
+        const chef = chefs.find(c => c.id === chefId);
+        
+        if (!chef) {
+            showAlert('Chef not found', 'danger');
+            return;
+        }
+        
+        currentChefId = chefId;
+        
+        const modalContent = document.getElementById('chefDetailContent');
+        modalContent.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Personal Information</h6>
+                    <p><strong>Name:</strong> ${chef.first_name || ''} ${chef.last_name || ''}</p>
+                    <p><strong>Username:</strong> @${chef.username}</p>
+                    <p><strong>Email:</strong> ${chef.email}</p>
+                    <p><strong>Phone:</strong> ${chef.chef_info ? chef.chef_info.phone_number : 'Not provided'}</p>
+                    <p><strong>Member Since:</strong> ${new Date(chef.date_joined).toLocaleDateString()}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Professional Information</h6>
+                    ${chef.chef_info ? `
+                        <p><strong>Area:</strong> ${chef.chef_info.area || 'Not set'}</p>
+                        <p><strong>City:</strong> ${chef.chef_info.city || 'Not set'}</p>
+                        <p><strong>Full Address:</strong> ${chef.chef_info.full_address || 'Not set'}</p>
+                        <p><strong>Cuisines:</strong> ${chef.chef_info.cuisine_specialties || 'Not specified'}</p>
+                        <p><strong>Experience:</strong> ${chef.chef_info.cooking_experience || 0} years</p>
+                        <p><strong>Kitchen Type:</strong> ${chef.chef_info.kitchen_type || 'Not specified'}</p>
+                        <p><strong>Rating:</strong> ${chef.chef_info.average_rating || 'No ratings yet'}</p>
+                        <p><strong>Verification Status:</strong> 
+                            ${chef.chef_info.is_verified ? 
+                                '<span class="badge bg-success">Verified</span>' : 
+                                '<span class="badge bg-warning">Pending Verification</span>'}
+                        </p>
+                        ${chef.chef_info.verification_date ? 
+                            `<p><strong>Verified On:</strong> ${new Date(chef.chef_info.verification_date).toLocaleDateString()}</p>` : ''}
+                    ` : '<p class="text-muted">No chef profile information available</p>'}
+                </div>
+            </div>
+        `;
+        
+        // Show/hide verify button based on status
+        const verifyBtn = document.getElementById('verifyChefBtn');
+        if (chef.chef_info && chef.chef_info.is_verified) {
+            verifyBtn.style.display = 'none';
+        } else {
+            verifyBtn.style.display = 'inline-block';
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('chefDetailModal'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error loading chef details:', error);
+        showAlert('Error loading chef details', 'danger');
+    }
+}
+
+async function quickVerifyChef(chefId) {
+    if (!confirm('Are you sure you want to verify this chef?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/chefs/admin/verify-chef/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                chef_id: chefId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showAlert(result.message, 'success');
+            // Refresh the current view
+            if (currentView === 'pending') {
+                loadPendingChefs();
+            } else {
+                loadAllChefs();
+            }
+            loadDashboardData();
+        } else {
+            showAlert(result.error || 'Verification failed', 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Error verifying chef:', error);
+        showAlert('Error verifying chef: ' + error.message, 'danger');
+    }
+}
+
+async function verifyChef() {
+    if (!currentChefId) {
+        showAlert('No chef selected', 'danger');
+        return;
+    }
+    
+    await quickVerifyChef(currentChefId);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('chefDetailModal'));
+    modal.hide();
+}
+
+// Delivery Partner Management Functions
+async function loadDeliveryPartners() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/chefs/admin/delivery-partners/', {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const partners = await response.json();
+        
+        // Update pending delivery partners count
+        const pendingPartners = partners.filter(p => p.verification_status === 'pending');
+        document.getElementById('pendingDeliveryCount').textContent = pendingPartners.length;
+        
+        displayDeliveryPartners(partners);
+        
+    } catch (error) {
+        console.error('Error loading delivery partners:', error);
+        document.getElementById('deliveryPartnerContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error loading delivery partners: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displayDeliveryPartners(partners) {
+    const content = document.getElementById('deliveryPartnerContent');
+    
+    if (partners.length === 0) {
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-motorcycle text-muted fa-3x mb-3"></i>
+                <h5>No delivery partners found</h5>
+                <p class="text-muted">No delivery partners have registered yet.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    partners.forEach(partner => {
+        const verificationStatus = partner.verification_status === 'verified' ? 
+            '<span class="badge bg-success">Verified</span>' : 
+            '<span class="badge bg-warning">Pending</span>';
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0">${partner.user.first_name || ''} ${partner.user.last_name || ''}</h6>
+                            ${verificationStatus}
+                        </div>
+                        <p class="card-text">
+                            <small class="text-muted">@${partner.user.username}</small><br>
+                            ${partner.user.email}<br>
+                            ${partner.phone_number}<br>
+                            ${partner.current_location || 'Location not set'}
+                        </p>
+                        <p class="card-text">
+                            <small>
+                                <strong>Vehicle:</strong> ${partner.vehicle_type || 'Not specified'}<br>
+                                <strong>Available:</strong> ${partner.is_available ? 'Yes' : 'No'}<br>
+                                <strong>Completed Orders:</strong> ${partner.completed_orders || 0}
+                            </small>
+                        </p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewDeliveryPartnerDetails(${partner.id})">
+                                <i class="fas fa-eye me-1"></i>View Details
+                            </button>
+                            ${partner.verification_status !== 'verified' ? `
+                                <button class="btn btn-sm btn-success" onclick="verifyDeliveryPartner(${partner.id})">
+                                    <i class="fas fa-check me-1"></i>Verify
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    content.innerHTML = html;
+}
+
+function showAllDeliveryPartners() {
+    loadDeliveryPartners();
+}
+
+function showPendingDeliveryPartners() {
+    // Filter to show only pending partners
+    loadDeliveryPartners().then(() => {
+        const content = document.getElementById('deliveryPartnerContent');
+        const cards = content.querySelectorAll('.col-md-6');
+        cards.forEach(card => {
+            const badge = card.querySelector('.badge');
+            if (badge && badge.textContent === 'Verified') {
+                card.style.display = 'none';
+            }
+        });
+    });
+}
+
+async function viewDeliveryPartnerDetails(partnerId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/chefs/admin/delivery-partners/', {
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch delivery partner details');
+        }
+        
+        const partners = await response.json();
+        const partner = partners.find(p => p.id === partnerId);
+        
+        if (!partner) {
+            throw new Error('Delivery partner not found');
+        }
+        
+        currentDeliveryPartnerId = partnerId;
+        
+        const modalContent = document.getElementById('deliveryPartnerDetailContent');
+        modalContent.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Personal Information</h6>
+                    <p><strong>Name:</strong> ${partner.user.first_name || ''} ${partner.user.last_name || ''}</p>
+                    <p><strong>Username:</strong> @${partner.user.username}</p>
+                    <p><strong>Email:</strong> ${partner.user.email}</p>
+                    <p><strong>Phone:</strong> ${partner.phone_number}</p>
+                    <p><strong>Member Since:</strong> ${new Date(partner.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Professional Information</h6>
+                    <p><strong>Vehicle Type:</strong> ${partner.vehicle_type || 'Not specified'}</p>
+                    <p><strong>Vehicle Number:</strong> ${partner.vehicle_number || 'Not provided'}</p>
+                    <p><strong>License Number:</strong> ${partner.license_number || 'Not provided'}</p>
+                    <p><strong>Current Location:</strong> ${partner.current_location || 'Not available'}</p>
+                    <p><strong>Available:</strong> ${partner.is_available ? 'Yes' : 'No'}</p>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h6>Performance Metrics</h6>
+                    <p><strong>Total Deliveries:</strong> ${partner.total_deliveries || 0}</p>
+                    <p><strong>Average Rating:</strong> ${partner.average_rating || 'No ratings yet'}</p>
+                    <p><strong>Completion Rate:</strong> ${partner.completion_rate || 0}%</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Service Information</h6>
+                    <p><strong>Service Areas:</strong> ${partner.service_areas || 'Not specified'}</p>
+                    <p><strong>Max Delivery Distance:</strong> ${partner.max_delivery_distance || 0} km</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge ${partner.status === 'active' ? 'bg-success' : 'bg-secondary'}">${partner.status}</span>
+                    </p>
+                    <p><strong>Verification Status:</strong> 
+                        ${partner.verification_status === 'verified' ? 
+                            '<span class="badge bg-success">Verified</span>' : 
+                            '<span class="badge bg-warning">Pending Verification</span>'}
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Show/hide verify button based on verification status
+        const verifyBtn = document.getElementById('verifyPartnerBtn');
+        if (partner.verification_status === 'verified') {
+            verifyBtn.style.display = 'none';
+        } else {
+            verifyBtn.style.display = 'inline-block';
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('deliveryPartnerDetailModal'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error loading delivery partner details:', error);
+        showAlert('Error loading delivery partner details', 'danger');
+    }
+}
+
+async function verifyDeliveryPartnerFromModal() {
+    if (!currentDeliveryPartnerId) {
+        showAlert('No delivery partner selected', 'danger');
+        return;
+    }
+    
+    await verifyDeliveryPartner(currentDeliveryPartnerId);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deliveryPartnerDetailModal'));
+    modal.hide();
+}
+
+async function verifyDeliveryPartner(partnerId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`/delivery/admin/verify-partner/${partnerId}/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (response.ok) {
+            showAlert('Delivery partner verified successfully', 'success');
+            loadDeliveryPartners();
+            loadDashboardData();
+        } else {
+            showAlert('Verification failed', 'danger');
+        }
+    } catch (error) {
+        console.error('Error verifying delivery partner:', error);
+        showAlert('Error verifying delivery partner', 'danger');
+    }
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

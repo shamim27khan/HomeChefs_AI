@@ -149,11 +149,14 @@ async function handlePageLogin() {
         return;
     }
     
+    const submitBtn = document.querySelector('button[onclick="handlePageLogin()"]');
+    
     try {
         // Disable button during submission
-        const submitBtn = event.target;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+        }
         
         const response = await fetch('/api/auth/login/', {
             method: 'POST',
@@ -194,8 +197,10 @@ async function handlePageLogin() {
         showAlert('Network error. Please try again.', 'danger');
     } finally {
         // Re-enable button
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login';
+        }
     }
 }
 
