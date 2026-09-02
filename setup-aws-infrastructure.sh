@@ -5,6 +5,13 @@
 
 set -e
 
+# Use Windows AWS CLI (aws.exe) from WSL when no Linux 'aws' is available
+if ! command -v aws &> /dev/null && command -v aws.exe &> /dev/null; then
+    aws() {
+        aws.exe "$@" | tr -d '\r'
+    }
+fi
+
 # Configuration
 REGION="ap-south-1"
 PROJECT_NAME="homechefs-ai"
@@ -15,7 +22,7 @@ DOMAIN_NAME="homechefhub.in"
 echo "🏗️ Setting up AWS infrastructure for HomeChefs AI..."
 
 # Check if AWS CLI is installed and configured
-if ! command -v aws &> /dev/null; then
+if ! command -v aws &> /dev/null && ! command -v aws.exe &> /dev/null; then
     echo "❌ AWS CLI is not installed. Please install it first."
     exit 1
 fi
@@ -44,7 +51,7 @@ echo "✅ VPC created: $VPC_ID"
 # Create Subnets
 echo "🔗 Creating subnets..."
 PUBLIC_SUBNET_1_ID=$(aws ec2 create-subnet \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --cidr-block 10.0.1.0/24 \
     --availability-zone ${REGION}a \
     --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=$PROJECT_NAME-public-1}]" \
@@ -52,7 +59,7 @@ PUBLIC_SUBNET_1_ID=$(aws ec2 create-subnet \
     --output text)
 
 PUBLIC_SUBNET_2_ID=$(aws ec2 create-subnet \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --cidr-block 10.0.2.0/24 \
     --availability-zone ${REGION}b \
     --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=$PROJECT_NAME-public-2}]" \
@@ -60,7 +67,7 @@ PUBLIC_SUBNET_2_ID=$(aws ec2 create-subnet \
     --output text)
 
 PRIVATE_SUBNET_1_ID=$(aws ec2 create-subnet \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --cidr-block 10.0.3.0/24 \
     --availability-zone ${REGION}a \
     --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=$PROJECT_NAME-private-1}]" \
@@ -68,7 +75,7 @@ PRIVATE_SUBNET_1_ID=$(aws ec2 create-subnet \
     --output text)
 
 PRIVATE_SUBNET_2_ID=$(aws ec2 create-subnet \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --cidr-block 10.0.4.0/24 \
     --availability-zone ${REGION}b \
     --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=$PROJECT_NAME-private-2}]" \
@@ -88,25 +95,25 @@ IGW_ID=$(aws ec2 create-internet-gateway \
     --query InternetGateway.InternetGatewayId \
     --output text)
 
-aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID
+aws ec2 attach-internet-gateway --vpc-id vpc-05876b94b5dd325c5 --internet-gateway-id igw-0f24cd99b351b8ce5
 echo "✅ Internet Gateway created: $IGW_ID"
 
 # Create Route Tables
 echo "🛣️ Creating Route Tables..."
 PUBLIC_RT_ID=$(aws ec2 create-route-table \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --tag-specifications "ResourceType=route-table,Tags=[{Key=Name,Value=$PROJECT_NAME-public-rt}]" \
     --query RouteTable.RouteTableId \
     --output text)
 
 aws ec2 create-route \
-    --route-table-id $PUBLIC_RT_ID \
+    --route-table-id rtb-0fad549af2cef1b3b \
     --destination-cidr-block 0.0.0.0/0 \
-    --gateway-id $IGW_ID
+    --gateway-id igw-0f24cd99b351b8ce5
 
 # Associate public subnets with public route table
-aws ec2 associate-route-table --route-table-id $PUBLIC_RT_ID --subnet-id $PUBLIC_SUBNET_1_ID
-aws ec2 associate-route-table --route-table-id $PUBLIC_RT_ID --subnet-id $PUBLIC_SUBNET_2_ID
+aws ec2 associate-route-table --route-table-id rtb-0fad549af2cef1b3b --subnet-id subnet-061754e95366132d2
+aws ec2 associate-route-table --route-table-id rtb-0fad549af2cef1b3b --subnet-id subnet-0d0fee8129a3b9047
 
 echo "✅ Route Tables created and associated"
 
@@ -117,26 +124,26 @@ echo "🔒 Creating Security Groups..."
 WEB_SG_ID=$(aws ec2 create-security-group \
     --group-name $PROJECT_NAME-web-sg \
     --description "Security group for web servers" \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$PROJECT_NAME-web-sg}]" \
     --query GroupId \
     --output text)
 
 # Allow SSH, HTTP, HTTPS
 aws ec2 authorize-security-group-ingress \
-    --group-id $WEB_SG_ID \
+    --group-id sg-0a64d7b70fb024f6a \
     --protocol tcp \
     --port 22 \
     --cidr 0.0.0.0/0
 
 aws ec2 authorize-security-group-ingress \
-    --group-id $WEB_SG_ID \
+    --group-id sg-0a64d7b70fb024f6a \
     --protocol tcp \
     --port 80 \
     --cidr 0.0.0.0/0
 
 aws ec2 authorize-security-group-ingress \
-    --group-id $WEB_SG_ID \
+    --group-id sg-0a64d7b70fb024f6a \
     --protocol tcp \
     --port 443 \
     --cidr 0.0.0.0/0
@@ -145,41 +152,42 @@ aws ec2 authorize-security-group-ingress \
 DB_SG_ID=$(aws ec2 create-security-group \
     --group-name $PROJECT_NAME-db-sg \
     --description "Security group for database" \
-    --vpc-id $VPC_ID \
+    --vpc-id vpc-05876b94b5dd325c5 \
     --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$PROJECT_NAME-db-sg}]" \
     --query GroupId \
     --output text)
 
 # Allow database access from web servers
 aws ec2 authorize-security-group-ingress \
-    --group-id $DB_SG_ID \
+    --group-id sg-030d4a9e22eea7a2c \
     --protocol tcp \
     --port 5432 \
-    --source-group $WEB_SG_ID
+    --source-group sg-0a64d7b70fb024f6a
 
 echo "✅ Security Groups created:"
-echo "   Web SG: $WEB_SG_ID"
-echo "   DB SG: $DB_SG_ID"
+echo "   Web SG: sg-0a64d7b70fb024f6a"
+echo "   DB SG: sg-030d4a9e22eea7a2c"
 
 # Create RDS Subnet Group
 echo "🗄️ Creating RDS Subnet Group..."
 aws rds create-db-subnet-group \
     --db-subnet-group-name $PROJECT_NAME-db-subnet-group \
     --db-subnet-group-description "Subnet group for RDS database" \
-    --subnet-ids $PRIVATE_SUBNET_1_ID $PRIVATE_SUBNET_2_ID
+    --subnet-ids subnet-0fe9c31a5a8af90f0  subnet-0c30df7b19fd0666d
 
+
+#TODO
 # Create RDS Database
 echo "🗄️ Creating RDS PostgreSQL database..."
 DB_INSTANCE_ID=$(aws rds create-db-instance \
     --db-instance-identifier $PROJECT_NAME-db \
     --db-instance-class $RDS_INSTANCE_TYPE \
     --engine postgres \
-    --engine-version 14.9 \
     --master-username homechefs \
     --master-user-password $(openssl rand -base64 16) \
     --allocated-storage 20 \
     --storage-type gp2 \
-    --vpc-security-group-ids $DB_SG_ID \
+    --vpc-security-group-ids sg-030d4a9e22eea7a2c \
     --db-subnet-group-name $PROJECT_NAME-db-subnet-group \
     --backup-retention-period 7 \
     --multi-az \
@@ -193,9 +201,9 @@ echo "⏳ Waiting for database to become available..."
 
 aws rds wait db-instance-available --db-instance-identifier $DB_INSTANCE_ID
 
-# Get RDS endpoint
+# Get RDS endpoint #TODO
 RDS_ENDPOINT=$(aws rds describe-db-instances \
-    --db-instance-identifier $DB_INSTANCE_ID \
+    --db-instance-identifier homechefs-ai-db \
     --query DBInstances[0].Endpoint.Address \
     --output text)
 
@@ -231,19 +239,19 @@ KEY_NAME="$PROJECT_NAME-keypair"
 aws ec2 create-key-pair \
     --key-name $KEY_NAME \
     --query 'KeyMaterial' \
-    --output text > ~/.ssh/$KEY_NAME.pem
+    --output text > ./.ssh/$KEY_NAME.pem
 
 chmod 400 ~/.ssh/$KEY_NAME.pem
 echo "✅ Key pair created: $KEY_NAME (saved to ~/.ssh/$KEY_NAME.pem)"
 
-# Create EC2 Instance
+# Create EC2 Instance #TODO
 echo "🖥️ Creating EC2 instance..."
 EC2_INSTANCE_ID=$(aws ec2 run-instances \
-    --image-id ami-0c02fb55956c7d316 \
+    --image-id ami-0ac7b260cf76d8865 \
     --instance-type $EC2_INSTANCE_TYPE \
-    --key-name $KEY_NAME \
-    --security-group-ids $WEB_SG_ID \
-    --subnet-id $PUBLIC_SUBNET_1_ID \
+    --key-name  $KEY_NAME \
+    --security-group-ids sg-0a64d7b70fb024f6a \
+    --subnet-id subnet-061754e95366132d2 \
     --associate-public-ip-address \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$PROJECT_NAME-web-server}]" \
     --query Instances[0].InstanceId \
@@ -252,11 +260,11 @@ EC2_INSTANCE_ID=$(aws ec2 run-instances \
 echo "✅ EC2 instance creation initiated: $EC2_INSTANCE_ID"
 echo "⏳ Waiting for instance to become available..."
 
-aws ec2 wait instance-running --instance-ids $EC2_INSTANCE_ID
+aws ec2 wait instance-running --instance-ids i-0e5e6a714d6bb642f
 
 # Get EC2 Public IP
 EC2_PUBLIC_IP=$(aws ec2 describe-instances \
-    --instance-ids $EC2_INSTANCE_ID \
+    --instance-ids i-0067c8b9368ec93ff \
     --query Reservations[0].Instances[0].PublicIpAddress \
     --output text)
 
@@ -277,14 +285,14 @@ if [ -n "$HOSTED_ZONE_ID" ]; then
         --change-batch '{
             "Changes": [
                 {
-                    "Action": "CREATE",
+                    "Action": "UPSERT",
                     "ResourceRecordSet": {
                         "Name": "'$DOMAIN_NAME'",
                         "Type": "A",
                         "TTL": 300,
                         "ResourceRecords": [
                             {
-                                "Value": "'$EC2_PUBLIC_IP'"
+                                "Value": "'13.204.86.218'"
                             }
                         ]
                     }
@@ -302,28 +310,28 @@ cat > infrastructure-details.txt << EOF
 AWS Infrastructure Details for HomeChefs AI
 ==========================================
 
-VPC ID: $VPC_ID
-Public Subnets: $PUBLIC_SUBNET_1_ID, $PUBLIC_SUBNET_2_ID
-Private Subnets: $PRIVATE_SUBNET_1_ID, $PRIVATE_SUBNET_2_ID
-Internet Gateway: $IGW_ID
-Route Table: $PUBLIC_RT_ID
+VPC ID: vpc-05876b94b5dd325c5
+Public Subnets: subnet-061754e95366132d2, subnet-0d0fee8129a3b9047
+Private Subnets: subnet-0fe9c31a5a8af90f0, subnet-0c30df7b19fd0666d
+Internet Gateway: igw-0f24cd99b351b8ce5
+Route Table: rtb-0fad549af2cef1b3b
 
 Security Groups:
-- Web SG: $WEB_SG_ID
-- DB SG: $DB_SG_ID
+- Web SG: sg-0a64d7b70fb024f6a
+- DB SG: sg-030d4a9e22eea7a2c
 
 Database:
-- RDS Instance: $DB_INSTANCE_ID
-- RDS Endpoint: $RDS_ENDPOINT
+- RDS Instance: homechefs-ai-db
+- RDS Endpoint: homechefs-ai-db.chcsuci223od.ap-south-1.rds.amazonaws.com
 - Username: homechefs
 
 Storage:
-- S3 Bucket: $S3_BUCKET_NAME
+- S3 Bucket: http://homechefs-ai-media-1787548385.s3.amazonaws.com/
 
 Compute:
-- EC2 Instance: $EC2_INSTANCE_ID
-- EC2 Public IP: $EC2_PUBLIC_IP
-- Key Pair: $KEY_NAME
+- EC2 Instance: i-0e5e6a714d6bb642f
+- EC2 Public IP: 13.233.163.151
+- Key Pair: homechefs-ai-keypair
 
 Next Steps:
 1. Update deploy-aws.sh with EC2_PUBLIC_IP=$EC2_PUBLIC_IP

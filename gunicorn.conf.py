@@ -29,8 +29,8 @@ keepalive = 5
 preload_app = True
 
 # User and group
-user = os.getenv('GUNICORN_USER', 'www-data')
-group = os.getenv('GUNICORN_GROUP', 'www-data')
+user = os.getenv('GUNICORN_USER', 'ec2-user')
+group = os.getenv('GUNICORN_GROUP', 'ec2-user')
 
 # Temporary directory
 tmp_upload_dir = None
@@ -54,7 +54,7 @@ wsgi_app = 'HomeChefs.wsgi:application'
 
 # Raw environment
 raw_env = [
-    ('DJANGO_SETTINGS_MODULE', 'HomeChefs.settings'),
+    'DJANGO_SETTINGS_MODULE=HomeChefs.settings_production',
 ]
 
 # SSL configuration (uncomment for HTTPS)
