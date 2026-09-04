@@ -43,7 +43,7 @@ run_on_ec2 "
 "
 
 echo "📁 Creating project directory and copying files..."
-run_on_ec2 "mkdir -p $PROJECT_DIR $PROJECT_DIR/logs && chown -R $EC2_USER:$EC2_USER $PROJECT_DIR $PROJECT_DIR/logs"
+run_on_ec2 "mkdir -p $PROJECT_DIR $PROJECT_DIR/logs && sudo chown -R $EC2_USER:$EC2_USER $PROJECT_DIR $PROJECT_DIR/logs"
 
 echo "📦 Archiving tracked project files..."
 git archive --format=tar.gz --output /tmp/homechefs_ai_deploy.tar.gz HEAD
