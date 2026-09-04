@@ -314,7 +314,7 @@
             fetch('/delivery/api/toggle-availability/', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
                     'Content-Type': 'application/json',
                 }
             })
@@ -331,7 +331,7 @@
                 fetch(`/delivery/api/requests/${requestId}/accept/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
                         'Content-Type': 'application/json',
                     }
                 })
@@ -353,7 +353,7 @@
                 fetch(`/delivery/api/requests/${requestId}/decline/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
                         'Content-Type': 'application/json',
                     }
                 })
@@ -375,7 +375,7 @@
                 fetch(`/delivery/api/delivery/${assignmentId}/status/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ status: status, notes: notes })
@@ -392,7 +392,7 @@
                 fetch(`/delivery/api/delivery/${assignmentId}/status/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Authorization': 'Token ' + window.HC_AUTH_TOKEN,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ status: status })
