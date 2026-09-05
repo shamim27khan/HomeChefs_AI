@@ -301,11 +301,8 @@ def nearby_dishes(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    if radius_km > 10:
-        radius_km = 10
-    
     meals = DailyMeal.objects.filter(
-        date=date.today(),
+        date=timezone.localdate(),
         is_active=True,
         current_orders__lt=F('extra_portions')
     ).select_related('chef', 'chef__chefprofile')

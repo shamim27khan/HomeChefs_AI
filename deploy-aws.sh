@@ -43,10 +43,14 @@ run_on_ec2 "
 "
 
 echo "📁 Creating project directory and copying files..."
-run_on_ec2 "mkdir -p $PROJECT_DIR"
-copy_to_ec2 "./*" "$PROJECT_DIR/"
-copy_to_ec2 ".env.production" "$PROJECT_DIR/.env.production"
-copy_to_ec2 "requirements-prod.txt" "$PROJECT_DIR/"
+run_on_ec2 "mkdir -p $PROJECT_DIR $PROJECT_DIR/logs && sudo chown -R $EC2_USER:$EC2_USER $PROJECT_DIR $PROJECT_DIR/logs"
+
+echo "📦 Archiving tracked project files..."
+git archive --format=tar.gz --output /tmp/homechefs_ai_deploy.tar.gz HEAD
+scp -i "$KEY_FILE" -o StrictHostKeyChecking=no /tmp/homechefs_ai_deploy.tar.gz "$EC2_USER@$EC2_IP:$PROJECT_DIR/"
+run_on_ec2 "cd $PROJECT_DIR && tar xzf homechefs_ai_deploy.tar.gz && rm -f homechefs_ai_deploy.tar.gz"
+rm -f /tmp/homechefs_ai_deploy.tar.gz
+
 run_on_ec2 "chmod 600 $PROJECT_DIR/.env.production"
 
 echo "🔧 Installing Python dependencies..."
@@ -76,27 +80,36 @@ cat > /tmp/nginx_config << EOF
 server {
     listen 80;
     server_name $EC2_IP homechefhub.in www.homechefhub.in;
-    
+
     client_max_body_size 20M;
-    
+
+    location /.well-known/acme-challenge/ {
+        alias $PROJECT_DIR/.well-known/acme-challenge/;
+    }
+
     location /static/ {
         alias $PROJECT_DIR/staticfiles/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
-    
+
     location /media/ {
         alias $PROJECT_DIR/media/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
-    
+
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Authorization \$http_authorization;
+        proxy_set_header Content-Type \$http_content_type;
+        proxy_set_header Accept \$http_accept;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
@@ -109,6 +122,81 @@ run_on_ec2 "
     sudo mv /tmp/homechefs_nginx /etc/nginx/conf.d/homechefs.conf
     sudo rm -f /etc/nginx/conf.d/default.conf
     sudo nginx -t && (sudo systemctl start nginx || true) && sudo systemctl reload nginx
+"
+
+echo "🔒 Setting up SSL certificate..."
+run_on_ec2 "
+    cd $PROJECT_DIR
+    source venv/bin/activate
+    pip install certbot
+    CERT_FAILED=0
+    if [ ! -f /etc/letsencrypt/live/homechefhub.in/fullchain.pem ]; then
+        sudo $PROJECT_DIR/venv/bin/certbot certonly --webroot -w $PROJECT_DIR -d homechefhub.in --non-interactive --agree-tos --register-unsafely-without-email || CERT_FAILED=1
+    fi
+    echo \"certbot finished with CERT_FAILED=\$CERT_FAILED\"
+"
+
+echo "🌐 Reconfiguring Nginx for HTTPS..."
+cat > /tmp/nginx_config_ssl << EOF
+server {
+    listen 80;
+    server_name $EC2_IP homechefhub.in www.homechefhub.in;
+    location /.well-known/acme-challenge/ {
+        alias $PROJECT_DIR/.well-known/acme-challenge/;
+    }
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name $EC2_IP homechefhub.in www.homechefhub.in;
+
+    client_max_body_size 20M;
+
+    ssl_certificate /etc/letsencrypt/live/homechefhub.in/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/homechefhub.in/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    location /static/ {
+        alias $PROJECT_DIR/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /media/ {
+        alias $PROJECT_DIR/media/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Authorization \$http_authorization;
+        proxy_set_header Content-Type \$http_content_type;
+        proxy_set_header Accept \$http_accept;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+EOF
+
+copy_to_ec2 "/tmp/nginx_config_ssl" "/tmp/homechefs_nginx_ssl"
+run_on_ec2 "
+    if sudo test -f /etc/letsencrypt/live/homechefhub.in/fullchain.pem; then
+        sudo mv /tmp/homechefs_nginx_ssl /etc/nginx/conf.d/homechefs.conf
+        sudo nginx -t && sudo systemctl reload nginx
+    else
+        echo 'SSL certificate not obtained, keeping HTTP-only config'
+        rm -f /tmp/homechefs_nginx_ssl
+    fi
 "
 
 echo "🔧 Configuring Gunicorn service..."

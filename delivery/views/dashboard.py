@@ -1,5 +1,6 @@
 from .common import *
 from rest_framework.authtoken.models import Token
+from datetime import datetime, time, timedelta
 
 @login_required
 def delivery_dashboard(request):
@@ -22,10 +23,14 @@ def delivery_dashboard(request):
         delivery_assignment__isnull=True
     ).order_by('-order_time')
     
-    # Get today's completed deliveries
+    # Get today's completed deliveries (local Asia/Kolkata day)
+    today = timezone.localdate()
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    today_end = today_start + timedelta(days=1)
     today_completed = partner.deliveries.filter(
         status='delivered',
-        actual_delivery_time__date=timezone.now().date()
+        actual_delivery_time__gte=today_start,
+        actual_delivery_time__lt=today_end
     )
     
     # Get API token for dashboard fetch calls

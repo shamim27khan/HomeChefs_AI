@@ -212,9 +212,9 @@ def user_login(request):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         elif username and password:
-            # Username/password login
-            user = authenticate(username=username, password=password)
-            if not user:
+            # Username/password login (case-insensitive)
+            user = User.objects.filter(username__iexact=username).first()
+            if not user or not user.check_password(password):
                 return Response({
                     'message': 'Invalid credentials',
                     'error': 'invalid_credentials'

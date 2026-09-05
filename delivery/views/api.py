@@ -1,5 +1,6 @@
 from .common import *
 from decimal import Decimal
+from datetime import datetime, time, timedelta
 
 @swagger_auto_schema(
     method='get',
@@ -326,14 +327,19 @@ def get_partner_stats(request):
     # Calculate earnings
     total_earnings = sum(d.partner_earnings for d in partner.deliveries.filter(status='delivered'))
     
-    # Get today's stats
+    # Get today's stats (local Asia/Kolkata day)
+    today = timezone.localdate()
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    today_end = today_start + timedelta(days=1)
     today_deliveries = partner.deliveries.filter(
-        created_at__date=timezone.now().date()
+        created_at__gte=today_start,
+        created_at__lt=today_end
     )
     today_earnings = sum(d.partner_earnings for d in today_deliveries.filter(status='delivered'))
     
     # Get this month's stats
-    current_month = timezone.now().replace(day=1)
+    now_local = timezone.localtime(timezone.now())
+    current_month = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_deliveries = partner.deliveries.filter(created_at__gte=current_month)
     month_earnings = sum(d.partner_earnings for d in month_deliveries.filter(status='delivered'))
     
