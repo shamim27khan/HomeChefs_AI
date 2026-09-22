@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/chef.dart';
 import '../models/daily_meal.dart';
 import '../services/chef_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/meal_card.dart';
@@ -48,7 +49,7 @@ class _ChefDetailScreenState extends State<ChefDetailScreen> {
   Widget build(BuildContext context) {
     final chef = _chef ?? widget.chef;
     return Scaffold(
-      appBar: AppBar(title: Text(chef.displayName)),
+      appBar: brandedAppBar(title: chef.displayName),
       body: _isLoading
           ? const LoadingIndicator()
           : _error != null

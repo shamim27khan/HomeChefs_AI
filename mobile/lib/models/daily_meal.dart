@@ -21,6 +21,7 @@ class DailyMeal {
   final Chef? chefInfo;
   final String? chefUsername;
   final String? chefArea;
+  final double? distance;
 
   DailyMeal({
     required this.id,
@@ -43,6 +44,7 @@ class DailyMeal {
     this.chefInfo,
     this.chefUsername,
     this.chefArea,
+    this.distance,
   });
 
   factory DailyMeal.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,7 @@ class DailyMeal {
       chefInfo: chefJson is Map<String, dynamic> ? Chef.fromJson(chefJson) : null,
       chefUsername: json['chef_username'] as String?,
       chefArea: json['chef_area'] as String?,
+      distance: _parseDoubleOrNull(json['distance']),
     );
   }
 
@@ -77,6 +80,14 @@ class DailyMeal {
     if (value is int) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static double? _parseDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   static DateTime? _parseDate(dynamic value) {

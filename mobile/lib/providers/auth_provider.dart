@@ -5,6 +5,7 @@ import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/chef_service.dart';
 import '../services/customer_service.dart';
+import '../services/delivery_service.dart';
 import '../services/order_service.dart';
 import '../services/payment_service.dart';
 
@@ -13,6 +14,7 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final ChefService _chefService = ChefService();
   final CustomerService _customerService = CustomerService();
+  final DeliveryService _deliveryService = DeliveryService();
   final OrderService _orderService = OrderService();
   final PaymentService _paymentService = PaymentService();
 
@@ -43,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
     _authService.setToken(value);
     _chefService.setToken(value);
     _customerService.setToken(value);
+    _deliveryService.setToken(value);
     _orderService.setToken(value);
     _paymentService.setToken(value);
   }

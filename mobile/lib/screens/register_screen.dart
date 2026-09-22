@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/loading_indicator.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -91,15 +93,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      backgroundColor: AppColors.lightBg,
+      appBar: brandedAppBar(title: 'Create Account'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Card(
+                elevation: 6,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Center(child: AppLogo(height: 44)),
+                const SizedBox(height: 6),
+                const Text(
+                  'Create your account to get started',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.black54),
+                ),
+                const SizedBox(height: 20),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'customer', label: Text('Customer')),
@@ -148,9 +166,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Already have an account? Login'),
+                  child: const Text('Already have an account? Login',
+                      style: TextStyle(color: AppColors.primary)),
                 ),
               ],
+            ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

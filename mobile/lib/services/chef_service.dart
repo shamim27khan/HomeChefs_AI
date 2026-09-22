@@ -8,6 +8,17 @@ class ChefService {
 
   void setToken(String? token) => _client.setToken(token);
 
+  Future<Map<String, dynamic>> getNearbyDishes({
+    required double latitude,
+    required double longitude,
+    double radius = 3.0,
+  }) async {
+    final response = await _client.get(
+      '${AppConstants.apiPrefix}/chefs/nearby-dishes/?latitude=$latitude&longitude=$longitude&radius=$radius',
+    );
+    return _client.decoded(response) as Map<String, dynamic>;
+  }
+
   Future<List<DailyMeal>> getTodayMeals({String? area, String? mealType}) async {
     final queryParams = <String, String>{};
     if (area != null && area.isNotEmpty) queryParams['area'] = area;
@@ -41,14 +52,6 @@ class ChefService {
     return Chef.fromJson(_client.decoded(response) as Map<String, dynamic>);
   }
 
-  Future<List<DailyMeal>> getNearbyDishes(double latitude, double longitude, {double radius = 3.0}) async {
-    final response = await _client.get(
-      '${AppConstants.apiPrefix}/chefs/nearby-dishes/?latitude=$latitude&longitude=$longitude&radius=$radius',
-    );
-    final decoded = _client.decoded(response) as Map<String, dynamic>;
-    final dishes = decoded['dishes'] as List<dynamic>? ?? [];
-    return dishes.map((e) => DailyMeal.fromJson(e as Map<String, dynamic>)).toList();
-  }
 
   Future<List<DailyMeal>> getMyMeals() async {
     final response = await _client.get('${AppConstants.apiPrefix}/chefs/dashboard/my-meals/');

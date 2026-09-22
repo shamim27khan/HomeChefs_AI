@@ -29,13 +29,25 @@ class OrderService {
   Future<List<Order>> getCustomerOrders() async {
     final response = await _client.get('${AppConstants.apiPrefix}/orders/daily/customer/');
     final data = _client.decoded(response) as List<dynamic>;
-    return data.map((e) => Order.fromJson(e as Map<String, dynamic>)).toList();
+    final orders = data.map((e) => Order.fromJson(e as Map<String, dynamic>)).toList();
+    // Ensure newest-first ordering by order time (fall back to creation time)
+    orders.sort((a, b) {
+      final at = a.orderTime ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bt = b.orderTime ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bt.compareTo(at);
+    });
+    return orders;
   }
 
   Future<List<Order>> getCustomerOrderHistory() async {
     final response = await _client.get('${AppConstants.apiPrefix}/orders/daily/customer/history/');
     final data = _client.decoded(response) as List<dynamic>;
     return data.map((e) => Order.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Map<String, dynamic>> getChefOrderSummary() async {
+    final response = await _client.get('${AppConstants.apiPrefix}/orders/daily/chef/summary/');
+    return _client.decoded(response) as Map<String, dynamic>;
   }
 
   Future<List<Order>> getChefOrders() async {
@@ -59,6 +71,11 @@ class OrderService {
 
   Future<void> cancelOrder(int orderId) async {
     await _client.post('${AppConstants.apiPrefix}/orders/daily/$orderId/cancel/');
+  }
+
+  /// Customer confirms they received the order (web: confirmDelivery).
+  Future<void> confirmDelivery(int orderId) async {
+    await _client.post('${AppConstants.apiPrefix}/orders/daily/$orderId/deliver/');
   }
 
   Future<Review> rateOrder(int orderId, int rating, {String? comment}) async {

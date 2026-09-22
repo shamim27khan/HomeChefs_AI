@@ -3,6 +3,7 @@ import '../models/address.dart';
 import '../models/daily_meal.dart';
 import '../services/customer_service.dart';
 import '../services/order_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 
@@ -105,7 +106,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Place Order')),
+      appBar: brandedAppBar(title: 'Place Order'),
       body: _loadingAddresses ? const LoadingIndicator() : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

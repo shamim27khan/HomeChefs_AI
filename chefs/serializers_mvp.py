@@ -50,7 +50,13 @@ class DailyMealCreateSerializer(serializers.ModelSerializer):
             'extra_portions', 'price_per_portion', 'order_cutoff_time',
             'pickup_available', 'delivery_available', 'delivery_radius'
         ]
-    
+        extra_kwargs = {
+            # Model provides a default of 20:00; don't require it from clients
+            'order_cutoff_time': {'required': False},
+            'side_dish': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'additional_items': {'required': False, 'allow_blank': True, 'allow_null': True},
+        }
+
     def validate_extra_portions(self, value):
         if value < 1 or value > 20:
             raise serializers.ValidationError("Extra portions must be between 1 and 20.")
@@ -65,6 +71,11 @@ class DailyMealCreateSerializer(serializers.ModelSerializer):
         """
         Check that at least one delivery option is available
         """
+        # Normalize optional text fields: DB columns are NOT NULL
+        for field in ('side_dish', 'additional_items'):
+            if data.get(field) is None:
+                data[field] = ''
+
         if not data.get('pickup_available', False) and not data.get('delivery_available', False):
             raise serializers.ValidationError("At least one of pickup or delivery must be available.")
         

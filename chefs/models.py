@@ -251,9 +251,9 @@ class CustomerReview(models.Model):
         super().save(*args, **kwargs)
         # Update chef's rating when review is saved
         try:
-            chef_profile = self.daily_meal.chef.chef_profile
+            chef_profile = self.daily_meal.chef.chefprofile
             chef_profile.update_rating()
-        except ChefProfile.DoesNotExist:
+        except (ChefProfile.DoesNotExist, AttributeError):
             pass
 
 # Legacy models for backward compatibility (will be phased out)

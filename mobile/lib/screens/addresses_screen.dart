@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/address.dart';
 import '../services/customer_service.dart';
 import '../widgets/address_card.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 import 'add_address_screen.dart';
@@ -43,8 +44,8 @@ class _AddressesScreenState extends State<AddressesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Addresses'),
+      appBar: brandedAppBar(
+        title: 'My Addresses',
         actions: [
           IconButton(icon: const Icon(Icons.add), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddAddressScreen())).then((_) => _loadAddresses())),
         ],

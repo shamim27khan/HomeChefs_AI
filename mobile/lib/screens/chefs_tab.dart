@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../config/theme.dart';
 import '../models/chef.dart';
 import '../services/chef_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/chef_card.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
@@ -54,20 +56,50 @@ class _ChefsTabState extends State<ChefsTab> with AutomaticKeepAliveClientMixin 
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Browse Chefs')),
+      backgroundColor: AppColors.lightBg,
+      appBar: brandedAppBar(automaticallyImplyLeading: false),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search chefs or cuisine',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(icon: const Icon(Icons.clear), onPressed: () => _searchController.clear()),
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _loadChefs(),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            decoration: const BoxDecoration(gradient: AppColors.heroGradient),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Find your home chef',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Search by name, area or cuisine',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search chefs or cuisine',
+                    prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _loadChefs();
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => _loadChefs(),
+                ),
+              ],
             ),
           ),
           Expanded(

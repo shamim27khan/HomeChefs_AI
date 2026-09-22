@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/daily_meal.dart';
+import '../widgets/app_logo.dart';
 import 'order_create_screen.dart';
 
 class MealDetailScreen extends StatelessWidget {
@@ -12,7 +13,7 @@ class MealDetailScreen extends StatelessWidget {
     final available = meal.availablePortions ?? meal.extraPortions;
     final canOrder = meal.isOrderable ?? available > 0;
     return Scaffold(
-      appBar: AppBar(title: Text(meal.mainDish)),
+      appBar: brandedAppBar(title: meal.mainDish),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

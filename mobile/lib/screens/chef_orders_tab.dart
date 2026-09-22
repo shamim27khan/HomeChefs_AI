@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../config/theme.dart';
 import '../models/order.dart';
 import '../services/order_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/order_card.dart';
@@ -59,8 +61,10 @@ class _ChefOrdersTabState extends State<ChefOrdersTab> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Orders'),
+      backgroundColor: AppColors.lightBg,
+      appBar: brandedAppBar(
+        title: 'My Orders',
+        automaticallyImplyLeading: false,
         actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _loadOrders)],
       ),
       body: _isLoading

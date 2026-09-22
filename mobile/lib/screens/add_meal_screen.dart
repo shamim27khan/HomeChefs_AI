@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/chef_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/loading_indicator.dart';
 
 class AddMealScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   final _portionsController = TextEditingController();
   final _radiusController = TextEditingController();
   String _mealType = 'lunch';
+  TimeOfDay _cutoffTime = const TimeOfDay(hour: 20, minute: 0);
   bool _pickup = true;
   bool _delivery = false;
   bool _isSubmitting = false;
@@ -49,10 +51,11 @@ class _AddMealScreenState extends State<AddMealScreen> {
         'date': DateTime.now().toIso8601String().split('T').first,
         'meal_type': _mealType,
         'main_dish': _mainDishController.text.trim(),
-        'side_dish': _sideDishController.text.trim().isEmpty ? null : _sideDishController.text.trim(),
-        'additional_items': _additionalController.text.trim().isEmpty ? null : _additionalController.text.trim(),
+        'side_dish': _sideDishController.text.trim(),
+        'additional_items': _additionalController.text.trim(),
         'extra_portions': int.parse(_portionsController.text.trim()),
         'price_per_portion': double.parse(_priceController.text.trim()),
+        'order_cutoff_time': '${_cutoffTime.hour.toString().padLeft(2, '0')}:${_cutoffTime.minute.toString().padLeft(2, '0')}:00',
         'pickup_available': _pickup,
         'delivery_available': _delivery,
         'delivery_radius': _delivery ? int.tryParse(_radiusController.text.trim()) ?? 3 : 3,
@@ -69,7 +72,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Daily Meal')),
+      appBar: brandedAppBar(title: 'Add Daily Meal'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -101,6 +104,20 @@ class _AddMealScreenState extends State<AddMealScreen> {
                 decoration: const InputDecoration(labelText: 'Extra portions available'),
                 keyboardType: TextInputType.number,
                 validator: _numberValidator,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.schedule),
+                title: const Text('Order cut-off time'),
+                subtitle: Text(_cutoffTime.format(context)),
+                trailing: TextButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(context: context, initialTime: _cutoffTime);
+                    if (picked != null) setState(() => _cutoffTime = picked);
+                  },
+                  child: const Text('Change'),
+                ),
               ),
               const SizedBox(height: 12),
               Row(

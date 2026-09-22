@@ -404,7 +404,7 @@ def chef_orders(request):
     orders = DailyMealOrder.objects.filter(
         daily_meal__chef=request.user,
         daily_meal__date=target_date
-    ).order_by('-order_time')
+    ).select_related('daily_meal', 'customer').order_by('-order_time')
     
     from orders.serializers_mvp import ChefOrderListSerializer
     serializer = ChefOrderListSerializer(orders, many=True)
@@ -424,13 +424,16 @@ def my_meals(request):
         return Response({'error': 'Only chefs can access this endpoint'}, status=status.HTTP_403_FORBIDDEN)
     
     today = date.today()
-    
+
+    # DailyMealSerializer is much lighter than TodayMealsSerializer: the latter
+    # embeds PublicChefSerializer which runs 3 aggregate queries per meal (N+1),
+    # making the chef dashboard slow to load.
     meals = DailyMeal.objects.filter(
         chef=request.user,
         date=today
-    ).order_by('meal_type')
-    
-    serializer = TodayMealsSerializer(meals, many=True)
+    ).select_related('chef', 'chef__chefprofile').order_by('meal_type')
+
+    serializer = DailyMealSerializer(meals, many=True)
     return Response(serializer.data)
 
 

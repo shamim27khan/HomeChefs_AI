@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../config/theme.dart';
 import '../models/daily_meal.dart';
 import '../services/chef_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/meal_card.dart';
@@ -56,8 +58,10 @@ class _ChefMealsTabState extends State<ChefMealsTab> with AutomaticKeepAliveClie
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Meals'),
+      backgroundColor: AppColors.lightBg,
+      appBar: brandedAppBar(
+        title: 'My Meals',
+        automaticallyImplyLeading: false,
         actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMeals)],
       ),
       floatingActionButton: FloatingActionButton.extended(

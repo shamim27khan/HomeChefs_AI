@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/loading_indicator.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -32,15 +34,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: AppColors.lightBg,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.restaurant_menu, size: 64, color: Colors.orange),
-            SizedBox(height: 16),
-            Text('HomeChefs', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            SizedBox(height: 24),
+          children: const [
+            AppLogo(height: 110),
+            SizedBox(height: 32),
             LoadingIndicator(),
           ],
         ),

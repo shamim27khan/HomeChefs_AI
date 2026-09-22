@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/customer_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/loading_indicator.dart';
 
 class AddAddressScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Address')),
+      appBar: brandedAppBar(title: 'Add Address'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

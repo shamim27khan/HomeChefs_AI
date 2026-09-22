@@ -8,6 +8,9 @@ import 'profile_tab.dart';
 import 'chef_dashboard_tab.dart';
 import 'chef_meals_tab.dart';
 import 'chef_orders_tab.dart';
+import 'delivery_dashboard_tab.dart';
+import 'delivery_history_tab.dart';
+import 'delivery_stats_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final role = context.watch<AuthProvider>().user?.role ?? 'customer';
     final isChef = role == 'chef';
+    final isDelivery = role == 'delivery_partner';
 
     final items = isChef
         ? [
@@ -39,12 +43,19 @@ class _HomeScreenState extends State<HomeScreen> {
             _NavItem(screen: const ChefOrdersTab(), icon: Icons.receipt_long, label: 'Orders'),
             _NavItem(screen: const ProfileTab(), icon: Icons.person, label: 'Profile'),
           ]
-        : [
-            _NavItem(screen: const MealsTab(), icon: Icons.restaurant_menu, label: 'Meals'),
-            _NavItem(screen: const ChefsTab(), icon: Icons.search, label: 'Chefs'),
-            _NavItem(screen: const OrdersTab(), icon: Icons.receipt_long, label: 'Orders'),
-            _NavItem(screen: const ProfileTab(), icon: Icons.person, label: 'Profile'),
-          ];
+        : isDelivery
+            ? [
+                _NavItem(screen: const DeliveryDashboardTab(), icon: Icons.dashboard, label: 'Dashboard'),
+                _NavItem(screen: const DeliveryHistoryTab(), icon: Icons.history, label: 'History'),
+                _NavItem(screen: const DeliveryStatsTab(), icon: Icons.bar_chart, label: 'Stats'),
+                _NavItem(screen: const ProfileTab(), icon: Icons.person, label: 'Profile'),
+              ]
+            : [
+                _NavItem(screen: const MealsTab(), icon: Icons.restaurant_menu, label: 'Meals'),
+                _NavItem(screen: const ChefsTab(), icon: Icons.search, label: 'Chefs'),
+                _NavItem(screen: const OrdersTab(), icon: Icons.receipt_long, label: 'Orders'),
+                _NavItem(screen: const ProfileTab(), icon: Icons.person, label: 'Profile'),
+              ];
 
     return Scaffold(
       body: IndexedStack(

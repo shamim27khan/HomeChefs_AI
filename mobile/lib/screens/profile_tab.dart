@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/loading_indicator.dart';
 import 'addresses_screen.dart';
 import 'wallet_screen.dart';
@@ -21,34 +23,49 @@ class ProfileTab extends StatelessWidget {
     final user = auth.user;
     final profile = auth.profile;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: brandedAppBar(automaticallyImplyLeading: false),
       body: auth.isLoading
           ? const LoadingIndicator()
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                CircleAvatar(
-                  radius: 48,
-                  child: Text(
-                    (user?.displayName ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(fontSize: 36),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary, width: 2.5),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 44,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        (user?.displayName ?? 'U')[0].toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   user?.displayName ?? '',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.secondary,
+                      ),
                 ),
                 Text(
                   user?.email ?? '',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 8),
-                Chip(
-                  label: Text('Role: ${user?.role ?? 'customer'}'),
-                  avatar: const Icon(Icons.person_outline),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                 ),
                 const Divider(height: 32),
                 if (profile != null) ...[
@@ -61,24 +78,35 @@ class ProfileTab extends StatelessWidget {
                     _infoTile(Icons.restaurant_menu, 'Cuisines', profile['cuisine_specialties'].toString()),
                 ],
                 const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.location_on_outlined),
-                  title: const Text('Addresses'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddressesScreen())),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.account_balance_wallet_outlined),
-                  title: const Text('Wallet'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WalletScreen())),
-                ),
+                // Addresses and Wallet are customer-only features; the backend
+                // returns 403 for other roles, so hide them for chefs/admins.
+                if (user?.role == 'customer') ...[
+                  ListTile(
+                    leading: const Icon(Icons.location_on_outlined),
+                    title: const Text('Addresses'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddressesScreen())),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.account_balance_wallet_outlined),
+                    title: const Text('Wallet'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WalletScreen())),
+                  ),
+                ],
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => _logout(context),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white),
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _logout(context),
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('Logout'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
                 ),
               ],
             ),

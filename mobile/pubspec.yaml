@@ -40,6 +40,7 @@ dependencies:
   intl: ^0.19.0
   cached_network_image: ^3.4.1
   google_fonts: ^6.2.1
+  geolocator: ^13.0.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/images/hch.jpg
+    - assets/images/hch_logo.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/payment_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/error_message.dart';
 import '../widgets/loading_indicator.dart';
 
@@ -41,7 +42,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Wallet')),
+      appBar: brandedAppBar(title: 'Wallet'),
       body: _isLoading
           ? const LoadingIndicator()
           : _error != null
