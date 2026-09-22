@@ -64,6 +64,13 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
+  Future<Map<String, dynamic>> requestOtp(String phoneNumber) async {
+    return _setBusy(() async {
+      final response = await _authService.requestOtp(phoneNumber);
+      return response;
+    });
+  }
+
   Future<bool> register({
     required String username,
     required String email,

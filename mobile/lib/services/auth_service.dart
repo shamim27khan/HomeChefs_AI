@@ -26,7 +26,7 @@ class AuthService {
       'last_name': lastName,
       'phone_number': phoneNumber,
       'role': role,
-      'chef_profile': ?chefProfile,
+      'chef_profile': chefProfile,
     };
 
     final response = await _client.post('${AppConstants.apiPrefix}/auth/register/', body: body);

@@ -18,11 +18,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _error;
+  bool _isOtpMode = false;
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -31,16 +36,45 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _error = null);
     final auth = Provider.of<AuthProvider>(context, listen: false);
     try {
-      final success = await auth.login(
-        _usernameController.text.trim(),
-        _passwordController.text.trim(),
-      );
+      final bool success;
+      if (_isOtpMode) {
+        success = await auth.loginWithOtp(
+          _phoneController.text.trim(),
+          _otpController.text.trim(),
+        );
+      } else {
+        success = await auth.login(
+          _usernameController.text.trim(),
+          _passwordController.text.trim(),
+        );
+      }
       if (!mounted) return;
       if (success) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         setState(() => _error = 'Login failed. Please check your credentials.');
       }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _requestOtp() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _error = 'Phone number is required');
+      return;
+    }
+    setState(() => _error = null);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      final response = await auth.requestOtp(phone);
+      if (!mounted) return;
+      final message = response['message'] ?? 'OTP sent';
+      final otpCode = response['otp_code']?.toString() ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$message${otpCode.isNotEmpty ? ' (Code: $otpCode)' : ''}')),
+      );
     } catch (e) {
       setState(() => _error = e.toString());
     }
@@ -68,33 +102,73 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Center(child: AppLogo(height: 56)),
-                        const SizedBox(height: 28),
-                        TextFormField(
-                          controller: _usernameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Username or Email',
-                            prefixIcon: Icon(Icons.person_outline),
-                          ),
-                          validator: (value) =>
-                              value == null || value.isEmpty ? 'Username is required' : null,
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () => setState(() => _isOtpMode = false),
+                              child: Text(
+                                'Password',
+                                style: TextStyle(
+                                  fontWeight: _isOtpMode ? FontWeight.normal : FontWeight.bold,
+                                  color: _isOtpMode ? Colors.black54 : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const Text('|', style: TextStyle(color: Colors.black54)),
+                            TextButton(
+                              onPressed: () => setState(() => _isOtpMode = true),
+                              child: Text(
+                                'OTP',
+                                style: TextStyle(
+                                  fontWeight: _isOtpMode ? FontWeight.bold : FontWeight.normal,
+                                  color: _isOtpMode ? AppColors.primary : Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
+                          controller: _isOtpMode ? _phoneController : _usernameController,
                           decoration: InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined),
-                              onPressed: () =>
-                                  setState(() => _obscurePassword = !_obscurePassword),
+                            labelText: _isOtpMode ? 'Phone Number' : 'Username or Email',
+                            prefixIcon: Icon(
+                              _isOtpMode ? Icons.phone_outlined : Icons.person_outline,
                             ),
                           ),
+                          keyboardType: _isOtpMode ? TextInputType.phone : TextInputType.text,
                           validator: (value) =>
-                              value == null || value.isEmpty ? 'Password is required' : null,
+                              value == null || value.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        if (_isOtpMode)
+                          TextButton(
+                            onPressed: auth.isLoading ? null : _requestOtp,
+                            child: const Text('Send OTP'),
+                          ),
+                        TextFormField(
+                          controller: _isOtpMode ? _otpController : _passwordController,
+                          obscureText: _isOtpMode ? false : _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: _isOtpMode ? 'OTP Code' : 'Password',
+                            prefixIcon: Icon(
+                              _isOtpMode ? Icons.sms_outlined : Icons.lock_outline,
+                            ),
+                            suffixIcon: _isOtpMode
+                                ? null
+                                : IconButton(
+                                    icon: Icon(_obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined),
+                                    onPressed: () =>
+                                        setState(() => _obscurePassword = !_obscurePassword),
+                                  ),
+                          ),
+                          keyboardType: _isOtpMode ? TextInputType.number : TextInputType.text,
+                          validator: (value) =>
+                              value == null || value.isEmpty ? 'Required' : null,
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: 12),
@@ -121,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : const Icon(Icons.login, size: 18),
                             label: auth.isLoading
                                 ? const LoadingIndicator()
-                                : const Text('Login', style: TextStyle(fontSize: 16)),
+                                : Text(_isOtpMode ? 'Login with OTP' : 'Login', style: const TextStyle(fontSize: 16)),
                           ),
                         ),
                         const SizedBox(height: 20),
